@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { EmployeeDashboard } from '@/components/dashboard/EmployeeDashboard';
+import { supabase } from '@/integrations/supabase/client';
+import type { Session, User } from '@supabase/supabase-js';
 import logo from '@/assets/logo.png';
 
 type UserType = 'admin' | 'employee' | null;
@@ -11,14 +13,65 @@ export function TrainSmartApp() {
     type: UserType;
     name: string;
   }>({ type: null, name: '' });
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        if (session?.user) {
+          // For authenticated users, set as admin
+          setUser({ type: 'admin', name: session.user.email || 'Admin User' });
+        } else if (user.type === 'admin') {
+          // Only clear admin users on logout, keep employee sessions
+          setUser({ type: null, name: '' });
+        }
+        setLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        setUser({ type: 'admin', name: session.user.email || 'Admin User' });
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleLogin = (userType: 'admin' | 'employee', userName: string) => {
-    setUser({ type: userType, name: userName });
+    if (userType === 'employee') {
+      // Employee login doesn't use Supabase
+      setUser({ type: userType, name: userName });
+    }
+    // Admin login is handled by Supabase auth state change
   };
 
-  const handleLogout = () => {
-    setUser({ type: null, name: '' });
+  const handleLogout = async () => {
+    if (user.type === 'admin') {
+      // Logout admin from Supabase
+      await supabase.auth.signOut();
+    } else {
+      // Logout employee (mock auth)
+      setUser({ type: null, name: '' });
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user.type) {
     return <LoginForm onLogin={handleLogin} />;

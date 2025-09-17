@@ -4,7 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
-import { User, Shield } from 'lucide-react';
+import { User, Shield, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { supabase } from '@/integrations/supabase/client';
 import logo from '@/assets/logo.png';
 
 interface LoginFormProps {
@@ -14,11 +16,32 @@ interface LoginFormProps {
 export function LoginForm({ onLogin }: LoginFormProps) {
   const [adminForm, setAdminForm] = useState({ email: '', password: '' });
   const [employeeForm, setEmployeeForm] = useState({ name: '', employeeId: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminForm.email && adminForm.password) {
-      onLogin('admin', 'Admin Manager');
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: adminForm.email,
+        password: adminForm.password,
+      });
+
+      if (error) {
+        setError(error.message);
+        return;
+      }
+
+      if (data.user) {
+        onLogin('admin', data.user.email || 'Admin User');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -114,6 +137,13 @@ export function LoginForm({ onLogin }: LoginFormProps) {
               </TabsContent>
 
               <TabsContent value="admin" className="space-y-4">
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                
                 <form onSubmit={handleAdminLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
@@ -123,6 +153,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
                       placeholder="manager@company.com"
                       value={adminForm.email}
                       onChange={(e) => setAdminForm(prev => ({ ...prev, email: e.target.value }))}
+                      disabled={loading}
                       required
                     />
                   </div>
@@ -134,13 +165,25 @@ export function LoginForm({ onLogin }: LoginFormProps) {
                       placeholder="••••••••"
                       value={adminForm.password}
                       onChange={(e) => setAdminForm(prev => ({ ...prev, password: e.target.value }))}
+                      disabled={loading}
                       required
                     />
                   </div>
-                  <Button type="submit" variant="accent" className="w-full" size="lg">
-                    Access Admin Panel
+                  <Button 
+                    type="submit" 
+                    variant="accent" 
+                    className="w-full" 
+                    size="lg"
+                    disabled={loading}
+                  >
+                    {loading ? 'Signing in...' : 'Access Admin Panel'}
                   </Button>
                 </form>
+                
+                <div className="text-sm text-muted-foreground text-center">
+                  <p>Admin accounts are managed by system administrators.</p>
+                  <p>Contact your system admin if you need access.</p>
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>
