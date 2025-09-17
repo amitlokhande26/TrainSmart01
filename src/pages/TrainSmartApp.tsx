@@ -3,7 +3,7 @@ import { Header } from '@/components/layout/Header';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { EmployeeDashboard } from '@/components/dashboard/EmployeeDashboard';
 import { supabase } from '@/integrations/supabase/client';
-import type { Session, User } from '@supabase/supabase-js';
+// Avoid importing types to prevent tooling issues in some environments
 import logo from '@/assets/logo.png';
 
 type UserType = 'admin' | 'employee' | null;
@@ -13,53 +13,44 @@ export function TrainSmartApp() {
     type: UserType;
     name: string;
   }>({ type: null, name: '' });
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        if (session?.user) {
-          // For authenticated users, set as admin
-          setUser({ type: 'admin', name: session.user.email || 'Admin User' });
-        } else if (user.type === 'admin') {
-          // Only clear admin users on logout, keep employee sessions
-          setUser({ type: null, name: '' });
-        }
-        setLoading(false);
+    const deriveUserFromSession = (session: any | null) => {
+      if (!session?.user) {
+        setUser({ type: null, name: '' });
+        return;
       }
-    );
+      const role: string | undefined = (session.user.app_metadata as any)?.role || (session.user.user_metadata as any)?.role;
+      const email = session.user.email || '';
+      const displayName = (session.user.user_metadata as any)?.full_name || email || 'User';
+      const mappedRole: UserType = role === 'admin' || role === 'manager' ? 'admin' : 'employee';
+      setUser({ type: mappedRole, name: displayName });
+    };
 
-    // Check for existing session
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      deriveUserFromSession(newSession);
+      setLoading(false);
+    });
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session?.user) {
-        setUser({ type: 'admin', name: session.user.email || 'Admin User' });
-      }
+      deriveUserFromSession(session);
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleLogin = (userType: 'admin' | 'employee', userName: string) => {
-    if (userType === 'employee') {
-      // Employee login doesn't use Supabase
-      setUser({ type: userType, name: userName });
-    }
-    // Admin login is handled by Supabase auth state change
+  const handleLogin = (_userType: 'admin' | 'employee', _userName: string) => {
+    // No-op: the auth state listener will set the user based on Supabase session and role
   };
 
   const handleLogout = async () => {
-    if (user.type === 'admin') {
-      // Logout admin from Supabase
-      await supabase.auth.signOut();
-    } else {
-      // Logout employee (mock auth)
-      setUser({ type: null, name: '' });
-    }
+    await supabase.auth.signOut();
+    setUser({ type: null, name: '' });
   };
 
   if (loading) {

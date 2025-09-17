@@ -18,6 +18,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
   const [employeeForm, setEmployeeForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [employeeError, setEmployeeError] = useState<string | null>(null);
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,13 +46,29 @@ export function LoginForm({ onLogin }: LoginFormProps) {
     }
   };
 
-  const handleEmployeeLogin = (e: React.FormEvent) => {
+  const handleEmployeeLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (employeeForm.email && employeeForm.password) {
-      // TODO: Integrate with Supabase authentication
-      // For now, extract name from email for display
-      const userName = employeeForm.email.split('@')[0];
-      onLogin('employee', userName);
+    setLoading(true);
+    setEmployeeError(null);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: employeeForm.email,
+        password: employeeForm.password,
+      });
+
+      if (error) {
+        setEmployeeError(error.message);
+        return;
+      }
+
+      if (data.user) {
+        const displayName = data.user.user_metadata?.full_name || data.user.email || 'Employee';
+        onLogin('employee', displayName);
+      }
+    } catch (err) {
+      setEmployeeError('An unexpected error occurred');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -110,6 +127,12 @@ export function LoginForm({ onLogin }: LoginFormProps) {
               </TabsList>
 
               <TabsContent value="employee" className="space-y-4">
+                {employeeError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{employeeError}</AlertDescription>
+                  </Alert>
+                )}
                 <form onSubmit={handleEmployeeLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="employeeEmail">Email</Label>
@@ -120,6 +143,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
                       value={employeeForm.email}
                       onChange={(e) => setEmployeeForm(prev => ({ ...prev, email: e.target.value }))}
                       required
+                      disabled={loading}
                     />
                   </div>
                   <div className="space-y-2">
@@ -131,10 +155,11 @@ export function LoginForm({ onLogin }: LoginFormProps) {
                       value={employeeForm.password}
                       onChange={(e) => setEmployeeForm(prev => ({ ...prev, password: e.target.value }))}
                       required
+                      disabled={loading}
                     />
                   </div>
-                  <Button type="submit" className="w-full" size="lg">
-                    Access Training Portal
+                  <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                    {loading ? 'Signing in...' : 'Access Training Portal'}
                   </Button>
                 </form>
                 <div className="text-center text-sm text-muted-foreground mt-4">
