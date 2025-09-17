@@ -30,21 +30,45 @@ export function LoginForm({ onLogin }: LoginFormProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <img src={logo} alt="Company Logo" className="h-16 w-auto mx-auto mb-4" />
-          <div className="flex items-center justify-center mb-2">
-            <span className="text-4xl font-bold text-white">Train</span>
-            <span className="text-4xl font-bold text-accent">Smart</span>
+    <div className="min-h-screen bg-background">
+      {/* Large Brand Banner */}
+      <div className="w-full bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border-b-2 border-primary/20">
+        <div className="w-full">
+          {/* Stretched Logo */}
+          <div className="w-full h-56 bg-primary/5 flex items-center justify-center overflow-hidden">
+            <img 
+              src={logo} 
+              alt="TrainSmart Logo" 
+              className="w-full h-full object-cover"
+            />
           </div>
-          <p className="text-white/80 text-lg">Professional Training Management System</p>
+          
+          {/* Brand Name and Description Below Logo */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="flex items-center">
+                <span className="text-4xl font-bold text-primary">Train</span>
+                <span className="text-4xl font-bold text-accent">Smart</span>
+              </div>
+              <div className="text-base font-medium text-muted-foreground">
+                Professional Training Management System
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+      
+      <div className="flex items-center justify-center p-4 min-h-[calc(100vh-200px)]">
+        <div className="w-full max-w-md">
+          {/* Welcome Message */}
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-semibold text-foreground mb-2">Welcome Back</h2>
+            <p className="text-muted-foreground">Please sign in to access your training portal</p>
+          </div>
 
         <Card className="shadow-brand">
           <CardHeader>
-            <CardTitle className="text-center text-2xl">Welcome Back</CardTitle>
+            <CardTitle className="text-center text-2xl">Sign In</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="employee" className="w-full">
@@ -121,6 +145,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
             </Tabs>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );

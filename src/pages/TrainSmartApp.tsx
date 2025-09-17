@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { EmployeeDashboard } from '@/components/dashboard/EmployeeDashboard';
+import logo from '@/assets/logo.png';
 
 type UserType = 'admin' | 'employee' | null;
 
@@ -25,6 +26,33 @@ export function TrainSmartApp() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Large Brand Banner */}
+      <div className="w-full bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border-b-2 border-primary/20">
+        <div className="w-full">
+          {/* Stretched Logo */}
+          <div className="w-full h-56 bg-primary/5 flex items-center justify-center overflow-hidden">
+            <img 
+              src={logo} 
+              alt="TrainSmart Logo" 
+              className="w-full h-full object-cover"
+            />
+          </div>
+          
+          {/* Brand Name and Description Below Logo */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="flex items-center">
+                <span className="text-4xl font-bold text-primary">Train</span>
+                <span className="text-4xl font-bold text-accent">Smart</span>
+              </div>
+              <div className="text-base font-medium text-muted-foreground">
+                Professional Training Management System
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <Header
         userType={user.type}
         userName={user.name}
