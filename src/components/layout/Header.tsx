@@ -13,8 +13,18 @@ export function Header({ userType, userName, onLogout }: HeaderProps) {
   return (
     <header className="bg-card border-b border-border shadow-card">
       {/* Company Banner */}
-      <div className="w-full">
-        <img src={companyBanner} alt="Company Banner" className="w-full h-auto object-cover" />
+      <div className="w-full bg-gray-100">
+        <img 
+          src={companyBanner} 
+          alt="Company Banner" 
+          className="w-full h-24 object-cover"
+          onError={(e) => {
+            console.error('Banner image failed to load:', e);
+            e.currentTarget.style.display = 'block';
+            e.currentTarget.style.backgroundColor = '#f3f4f6';
+            e.currentTarget.style.border = '2px dashed #d1d5db';
+          }}
+        />
       </div>
       
       {/* Navigation Bar */}
