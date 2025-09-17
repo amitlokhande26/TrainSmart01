@@ -15,7 +15,7 @@ interface LoginFormProps {
 
 export function LoginForm({ onLogin }: LoginFormProps) {
   const [adminForm, setAdminForm] = useState({ email: '', password: '' });
-  const [employeeForm, setEmployeeForm] = useState({ name: '', employeeId: '' });
+  const [employeeForm, setEmployeeForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,8 +47,11 @@ export function LoginForm({ onLogin }: LoginFormProps) {
 
   const handleEmployeeLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (employeeForm.name && employeeForm.employeeId) {
-      onLogin('employee', employeeForm.name);
+    if (employeeForm.email && employeeForm.password) {
+      // TODO: Integrate with Supabase authentication
+      // For now, extract name from email for display
+      const userName = employeeForm.email.split('@')[0];
+      onLogin('employee', userName);
     }
   };
 
@@ -109,24 +112,24 @@ export function LoginForm({ onLogin }: LoginFormProps) {
               <TabsContent value="employee" className="space-y-4">
                 <form onSubmit={handleEmployeeLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
+                    <Label htmlFor="employeeEmail">Email</Label>
                     <Input
-                      id="name"
-                      type="text"
-                      placeholder="Enter your full name"
-                      value={employeeForm.name}
-                      onChange={(e) => setEmployeeForm(prev => ({ ...prev, name: e.target.value }))}
+                      id="employeeEmail"
+                      type="email"
+                      placeholder="employee@company.com"
+                      value={employeeForm.email}
+                      onChange={(e) => setEmployeeForm(prev => ({ ...prev, email: e.target.value }))}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="employeeId">Employee ID</Label>
+                    <Label htmlFor="employeePassword">Password</Label>
                     <Input
-                      id="employeeId"
-                      type="text"
-                      placeholder="Enter your employee ID"
-                      value={employeeForm.employeeId}
-                      onChange={(e) => setEmployeeForm(prev => ({ ...prev, employeeId: e.target.value }))}
+                      id="employeePassword"
+                      type="password"
+                      placeholder="••••••••"
+                      value={employeeForm.password}
+                      onChange={(e) => setEmployeeForm(prev => ({ ...prev, password: e.target.value }))}
                       required
                     />
                   </div>
@@ -134,6 +137,9 @@ export function LoginForm({ onLogin }: LoginFormProps) {
                     Access Training Portal
                   </Button>
                 </form>
+                <div className="text-center text-sm text-muted-foreground mt-4">
+                  <p>Don't have an account? Contact your manager to create your employee login.</p>
+                </div>
               </TabsContent>
 
               <TabsContent value="admin" className="space-y-4">
