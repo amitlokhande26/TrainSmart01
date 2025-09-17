@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { LogOut, User, Settings } from 'lucide-react';
-import logo from '@/assets/logo.png';
+import companyBanner from '@/assets/company-banner.png';
 
 interface HeaderProps {
   userType: 'admin' | 'employee';
@@ -12,15 +12,18 @@ interface HeaderProps {
 export function Header({ userType, userName, onLogout }: HeaderProps) {
   return (
     <header className="bg-card border-b border-border shadow-card">
+      {/* Company Banner */}
+      <div className="w-full">
+        <img src={companyBanner} alt="Company Banner" className="w-full h-auto object-cover" />
+      </div>
+      
+      {/* Navigation Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo and Brand */}
-          <div className="flex items-center space-x-4">
-            <img src={logo} alt="Company Logo" className="h-10 w-auto" />
-            <div className="flex items-center">
-              <span className="text-2xl font-bold text-primary">Train</span>
-              <span className="text-2xl font-bold text-accent">Smart</span>
-            </div>
+          {/* TrainSmart Brand */}
+          <div className="flex items-center">
+            <span className="text-2xl font-bold text-primary">Train</span>
+            <span className="text-2xl font-bold text-accent">Smart</span>
           </div>
 
           {/* User Info and Actions */}
