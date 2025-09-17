@@ -8,13 +8,19 @@ import { User, Shield, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import logo from '@/assets/logo.png';
+import { useNavigate } from 'react-router-dom';
 
 interface LoginFormProps {
   onLogin: (userType: 'admin' | 'employee', userName: string) => void;
 }
 
 export function LoginForm({ onLogin }: LoginFormProps) {
+  const navigate = useNavigate();
   const [adminForm, setAdminForm] = useState({ email: '', password: '' });
+  const roleToPath = (u: any) => {
+    const r = (u?.app_metadata as any)?.role || (u?.user_metadata as any)?.role;
+    return r === 'admin' || r === 'manager' ? '/admin' : '/employee';
+  };
   const [employeeForm, setEmployeeForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +43,16 @@ export function LoginForm({ onLogin }: LoginFormProps) {
       }
 
       if (data.user) {
-        onLogin('admin', data.user.email || 'Admin User');
+        const currentRole = (data.user.app_metadata as any)?.role || (data.user.user_metadata as any)?.role;
+        let userForNav = data.user;
+        if (!currentRole) {
+          const { data: updated } = await supabase.auth.updateUser({ data: { role: 'manager' } });
+          if (updated?.user) {
+            userForNav = updated.user as any;
+          }
+        }
+        onLogin('admin', userForNav.email || 'Admin User');
+        navigate(roleToPath(userForNav), { replace: true });
       }
     } catch (err) {
       setError('An unexpected error occurred');
@@ -62,8 +77,17 @@ export function LoginForm({ onLogin }: LoginFormProps) {
       }
 
       if (data.user) {
-        const displayName = data.user.user_metadata?.full_name || data.user.email || 'Employee';
+        let userForNav = data.user;
+        const currentRole = (data.user.app_metadata as any)?.role || (data.user.user_metadata as any)?.role;
+        if (!currentRole) {
+          const { data: updated } = await supabase.auth.updateUser({ data: { role: 'employee' } });
+          if (updated?.user) {
+            userForNav = updated.user as any;
+          }
+        }
+        const displayName = (userForNav.user_metadata as any)?.full_name || userForNav.email || 'Employee';
         onLogin('employee', displayName);
+        navigate(roleToPath(userForNav), { replace: true });
       }
     } catch (err) {
       setEmployeeError('An unexpected error occurred');
