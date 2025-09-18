@@ -6,6 +6,8 @@ import { Progress } from '@/components/ui/progress';
 import { ChevronRight, BookOpen, Award, Clock, CheckCircle } from 'lucide-react';
 import { TrainingLineSelector } from './TrainingLineSelector';
 import { TrainingModuleView } from './TrainingModuleView';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface EmployeeDashboardProps {
   userName: string;
@@ -218,15 +220,69 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
   const [selectedCategory, setSelectedCategory] = useState<TrainingCategory | null>(null);
   const [selectedModule, setSelectedModule] = useState<TrainingModule | null>(null);
 
-  // Calculate overall progress
-  const totalModules = mockData.reduce((acc, line) => 
-    acc + line.categories.reduce((catAcc, cat) => catAcc + cat.modules.length, 0), 0
-  );
-  const completedModules = mockData.reduce((acc, line) => 
-    acc + line.categories.reduce((catAcc, cat) => 
-      catAcc + cat.modules.filter(module => module.status === 'completed').length, 0
-    ), 0
-  );
+  // Load assigned modules for the current user
+  const { data: sessionData } = useQuery({
+    queryKey: ['session'],
+    queryFn: async () => (await supabase.auth.getSession()).data.session,
+  });
+
+  const userId = sessionData?.user?.id;
+
+  const { data: assignments, refetch: refetchAssignments } = useQuery({
+    queryKey: ['my-assignments'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('assignments')
+        .select('id,status,due_date,module:modules(id,title,storage_path,type,version)')
+        .eq('assigned_to', userId as any)
+        .order('assigned_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!userId,
+  });
+
+  const totalAssigned = assignments?.length || 0;
+  const completedAssigned = assignments?.filter((a: any) => a.status === 'completed').length || 0;
+  const progressAssigned = totalAssigned > 0 ? (completedAssigned / totalAssigned) * 100 : 0;
+
+  const markComplete = async (assignment: any) => {
+    try {
+      const signedName = userName;
+      const signedEmail = sessionData?.user?.email || '';
+      // Insert completion
+      const { data: c, error: cErr } = await supabase
+        .from('completions')
+        .insert({ assignment_id: assignment.id })
+        .select('id')
+        .single();
+      if (cErr) throw cErr;
+      // Insert signature snapshot
+      const ua = typeof navigator !== 'undefined' ? navigator.userAgent : undefined;
+      const { error: sErr } = await supabase.from('signatures').insert({
+        completion_id: c.id,
+        signer_user_id: userId,
+        signed_name_snapshot: signedName,
+        signed_email_snapshot: signedEmail,
+        user_agent: ua,
+      });
+      if (sErr) throw sErr;
+      // Update assignment status
+      await supabase.from('assignments').update({ status: 'completed' }).eq('id', assignment.id);
+      await refetchAssignments();
+    } catch (e) {
+      // no-op minimal handling
+    }
+  };
+
+  // Calculate overall progress (prefer live assignments if present, else mock)
+  const usingLive = totalAssigned > 0;
+  const totalModules = usingLive
+    ? totalAssigned
+    : mockData.reduce((acc, line) => acc + line.categories.reduce((catAcc, cat) => catAcc + cat.modules.length, 0), 0);
+  const completedModules = usingLive
+    ? completedAssigned
+    : mockData.reduce((acc, line) => acc + line.categories.reduce((catAcc, cat) => catAcc + cat.modules.filter(module => module.status === 'completed').length, 0), 0);
   const progressPercentage = totalModules > 0 ? (completedModules / totalModules) * 100 : 0;
 
   if (selectedModule) {
@@ -325,6 +381,63 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
         onBack={() => setSelectedLine(null)}
         onSelectCategory={setSelectedCategory}
       />
+    );
+  }
+
+  // If live assignments are available, show a simple assigned list UI first
+  if (usingLive) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-gradient-card rounded-lg p-6 shadow-card">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back, {userName}!</h1>
+          <div className="mt-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Overall Progress</span>
+              <span className="text-sm text-muted-foreground">{completedAssigned}/{totalAssigned} modules completed</span>
+            </div>
+            <Progress value={progressAssigned} className="h-2" />
+          </div>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>My Assigned Modules</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {(assignments || []).map((a: any) => (
+              <div key={a.id} className="flex items-center justify-between border rounded-lg p-4">
+                <div>
+                  <div className="font-semibold">{a.module?.title}</div>
+                  <div className="text-xs text-muted-foreground">v{a.module?.version}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={a.status === 'completed' ? 'default' : a.status === 'in_progress' ? 'secondary' : 'outline'}>
+                    {a.status}
+                  </Badge>
+                  <Button variant="outline" onClick={async () => {
+                    const path = a.module?.storage_path as string;
+                    if (!path) return;
+                    // Signed URL via storage API
+                    const { data, error } = await supabase.storage.from('training-materials').createSignedUrl(path, 300);
+                    if (error) return;
+                    if (data?.signedUrl) {
+                      // Use fetch then blob to avoid popup blockers and referrer issues
+                      const res = await fetch(data.signedUrl);
+                      const blob = await res.blob();
+                      const url = URL.createObjectURL(blob);
+                      window.open(url, '_blank');
+                      setTimeout(() => URL.revokeObjectURL(url), 30000);
+                    }
+                  }}>Open</Button>
+                  {a.status !== 'completed' && (
+                    <Button onClick={() => markComplete(a)}>Mark Complete</Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 

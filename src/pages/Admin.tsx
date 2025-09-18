@@ -23,7 +23,13 @@ export default function Admin() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-foreground mb-4">Admin Dashboard</h2>
-          <p className="text-muted-foreground">Manager features will appear here.</p>
+          <p className="text-muted-foreground mb-6">Choose a management area.</p>
+          <div className="flex gap-4 justify-center">
+            <a className="underline" href="/admin">Dashboard</a>
+            <a className="underline" href="/admin/assignments">Assignments</a>
+            <a className="underline" href="/admin/users">Users</a>
+            <a className="underline" href="/admin/reports">Reports</a>
+          </div>
         </div>
       </main>
     </div>
