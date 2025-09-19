@@ -5,7 +5,14 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 export default async function handler(req: Request): Promise<Response> {
   try {
-    if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
+    const corsHeaders: Record<string, string> = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'authorization, content-type, x-client-info, apikey',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    };
+
+    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+    if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405, headers: corsHeaders });
     const { createClient } = await import('npm:@supabase/supabase-js');
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -80,12 +87,18 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response(bytes, {
       status: 200,
       headers: {
+        ...corsHeaders,
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${type}_report.pdf"`
       }
     });
   } catch (e) {
-    return new Response(`Error: ${e}`, { status: 500 });
+    const corsHeaders: Record<string, string> = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'authorization, content-type, x-client-info, apikey',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    };
+    return new Response(`Error: ${e}`, { status: 500, headers: { ...corsHeaders, 'Content-Type': 'text/plain' } });
   }
 }
 
