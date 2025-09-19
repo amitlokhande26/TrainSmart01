@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useQuery } from '@tanstack/react-query';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useNavigate } from 'react-router-dom';
 
 export default function AdminUsers() {
+  const navigate = useNavigate();
   const [name, setName] = React.useState<string>('Admin');
   const [firstName, setFirstName] = React.useState('');
   const [lastName, setLastName] = React.useState('');
@@ -32,21 +33,6 @@ export default function AdminUsers() {
     queryFn: async () => (await supabase.from('users').select('*').eq('role','employee').order('first_name')).data || []
   });
 
-  const [selectedEmployee, setSelectedEmployee] = React.useState<any | null>(null);
-  const { data: selectedAssignments = [] } = useQuery({
-    queryKey: ['employee-assignments', selectedEmployee?.id],
-    queryFn: async () => {
-      if (!selectedEmployee?.id) return [] as any[];
-      const { data, error } = await supabase
-        .from('assignments')
-        .select('id,status,due_date,module:modules(id,title,version)')
-        .eq('assigned_to', selectedEmployee.id)
-        .order('assigned_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!selectedEmployee?.id,
-  });
 
   const createEmployee = async () => {
     if (!firstName || !lastName || !email) return;
@@ -97,7 +83,7 @@ export default function AdminUsers() {
           </CardHeader>
           <CardContent className="grid gap-3">
             {(employees || []).map((u: any) => (
-              <div key={u.id} className="border rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-muted/40" onClick={() => setSelectedEmployee(u)}>
+              <div key={u.id} className="border rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-muted/40" onClick={() => navigate(`/admin/users/${u.id}`)}>
                 <div>
                   <div className="font-medium">{u.first_name} {u.last_name}</div>
                   <div className="text-xs text-muted-foreground">{u.email}</div>
@@ -110,37 +96,6 @@ export default function AdminUsers() {
             )}
           </CardContent>
         </Card>
-
-        <Dialog open={!!selectedEmployee} onOpenChange={(open) => !open && setSelectedEmployee(null)}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Employee Assignments</DialogTitle>
-            </DialogHeader>
-            {!selectedEmployee ? null : (
-              <div className="space-y-4">
-                <div>
-                  <div className="font-semibold">{selectedEmployee.first_name} {selectedEmployee.last_name}</div>
-                  <div className="text-xs text-muted-foreground">{selectedEmployee.email}</div>
-                </div>
-                <div className="space-y-2">
-                  {(selectedAssignments || []).length === 0 ? (
-                    <div className="text-sm text-muted-foreground">No assignments for this employee.</div>
-                  ) : (
-                    (selectedAssignments || []).map((a: any) => (
-                      <div key={a.id} className="flex items-center justify-between border rounded-lg p-3">
-                        <div>
-                          <div className="font-medium">{a.module?.title}</div>
-                          <div className="text-xs text-muted-foreground">v{a.module?.version}</div>
-                        </div>
-                        <div className="text-xs text-muted-foreground">{a.status}</div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
       </main>
     </div>
   );
