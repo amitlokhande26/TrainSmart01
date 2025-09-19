@@ -5,12 +5,15 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface EmployeeDashboardProps {
   userName: string;
 }
 
 export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [pendingAssignment, setPendingAssignment] = React.useState<any | null>(null);
   const { data: sessionData } = useQuery({
     queryKey: ['session'],
     queryFn: async () => (await supabase.auth.getSession()).data.session,
@@ -36,6 +39,20 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
   const completedAssigned = assignments.filter((a: any) => a.status === 'completed').length;
   const inProgressAssigned = assignments.filter((a: any) => a.status === 'in_progress').length;
   const progressAssigned = totalAssigned > 0 ? (completedAssigned / totalAssigned) * 100 : 0;
+
+  const openAssignmentMaterial = async (assignment: any) => {
+    const path = assignment?.module?.storage_path as string;
+    if (!path) return;
+    const { data, error } = await supabase.storage.from('training-materials').createSignedUrl(path, 300);
+    if (error) return;
+    if (data?.signedUrl) {
+      const res = await fetch(data.signedUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    }
+  };
 
   const markComplete = async (assignment: any) => {
     try {
@@ -120,21 +137,9 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
                     <Badge variant={a.status === 'completed' ? 'default' : a.status === 'in_progress' ? 'secondary' : 'outline'}>
                       {a.status}
                     </Badge>
-                    <Button variant="outline" onClick={async () => {
-                      const path = a.module?.storage_path as string;
-                      if (!path) return;
-                      const { data, error } = await supabase.storage.from('training-materials').createSignedUrl(path, 300);
-                      if (error) return;
-                      if (data?.signedUrl) {
-                        const res = await fetch(data.signedUrl);
-                        const blob = await res.blob();
-                        const url = URL.createObjectURL(blob);
-                        window.open(url, '_blank');
-                        setTimeout(() => URL.revokeObjectURL(url), 30000);
-                      }
-                    }}>Open</Button>
+                    <Button variant="outline" onClick={() => openAssignmentMaterial(a)}>Open</Button>
                     {a.status !== 'completed' && (
-                      <Button onClick={() => markComplete(a)}>Mark Complete</Button>
+                      <Button onClick={() => { setPendingAssignment(a); setConfirmOpen(true); }}>Mark Complete</Button>
                     )}
                   </div>
                 </div>
@@ -143,6 +148,32 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Completion</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Congratulations on completing this training! Do you feel confident to move forward and apply what you've learned?
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={async () => {
+                const a = pendingAssignment;
+                setConfirmOpen(false);
+                if (a) await openAssignmentMaterial(a);
+              }}>No, Take Me Back</Button>
+              <Button onClick={async () => {
+                const a = pendingAssignment;
+                setConfirmOpen(false);
+                if (a) await markComplete(a);
+                setPendingAssignment(null);
+              }}>Yes, Mark Complete</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
