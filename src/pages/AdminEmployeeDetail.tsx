@@ -42,6 +42,10 @@ export default function AdminEmployeeDetail() {
       return data || [];
     },
     enabled: !!id,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    staleTime: 0,
+    refetchInterval: 10000,
   });
 
   return (

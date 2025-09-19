@@ -16,12 +16,20 @@ export default function AdminDashboard() {
 
   const { data: employeeProgress } = useQuery({
     queryKey: ['v_employee_progress'],
-    queryFn: async () => (await supabase.from('v_employee_progress').select('*')).data || []
+    queryFn: async () => (await supabase.from('v_employee_progress').select('*')).data || [],
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    staleTime: 0,
+    refetchInterval: 10000,
   });
 
   const { data: moduleCoverage } = useQuery({
     queryKey: ['v_module_coverage'],
-    queryFn: async () => (await supabase.from('v_module_coverage').select('*')).data || []
+    queryFn: async () => (await supabase.from('v_module_coverage').select('*')).data || [],
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    staleTime: 0,
+    refetchInterval: 10000,
   });
 
   const totalEmployees = employeeProgress?.length || 0;
