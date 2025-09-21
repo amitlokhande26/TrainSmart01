@@ -1,6 +1,8 @@
 test.employee+1@example.com
 EmployeeTrain1*
 
+SuperTrain1*
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).
