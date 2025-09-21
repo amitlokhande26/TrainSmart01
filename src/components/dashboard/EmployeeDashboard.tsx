@@ -29,7 +29,8 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
         .select(`
           id,status,due_date,
           module:modules(id,title,storage_path,type,version),
-          completion:completions(id,completed_at,signature:signatures(signed_name_snapshot,signed_email_snapshot,signed_at))
+          completion:completions(id,completed_at,signature:signatures(signed_name_snapshot,signed_email_snapshot,signed_at)),
+          trainer:users!assignments_trainer_user_id_fkey(id,first_name,last_name,email,role)
         `)
         .eq('assigned_to', userId as any)
         .order('assigned_at', { ascending: false });
@@ -100,6 +101,14 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
         user_agent: ua,
       });
       if (sErr) throw sErr;
+      // Notify trainer if set
+      try {
+        console.log('Calling trainer_notify_signoff with:', { completion_id: c.id, assignment_id: assignment.id, trainer_user_id: assignment.trainer_user_id });
+        const result = await supabase.functions.invoke('trainer_notify_signoff', { body: { completion_id: c.id, assignment_id: assignment.id } });
+        console.log('Trainer notification result:', result);
+      } catch (e) {
+        console.error('Trainer notification failed:', e);
+      }
       await refetch();
     } catch {}
   };
@@ -154,22 +163,31 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
           ) : (
             <div className="space-y-3">
               {assignments.map((a: any) => {
-                const isCompleted = Boolean(a?.completion?.id) || a.status === 'completed';
-                const statusLabel = isCompleted ? 'Completed' : a.status === 'in_progress' ? 'In Progress' : 'Not Started';
-                const badgeVariant = isCompleted ? 'default' : a.status === 'in_progress' ? 'secondary' : 'outline';
+                const hasEmployeeCompletion = Boolean(a?.completion?.id) || a.status === 'completed';
+                const requiresTrainer = Boolean(a?.trainer?.id);
+                const fullyCompleted = hasEmployeeCompletion && (!requiresTrainer || (requiresTrainer && Boolean(a?.completion?.id)));
+                const statusLabel = fullyCompleted
+                  ? 'Completed'
+                  : hasEmployeeCompletion && requiresTrainer
+                    ? 'Awaiting Trainer Sign-Off'
+                    : a.status === 'in_progress' ? 'In Progress' : 'Not Started';
+                const badgeVariant = fullyCompleted ? 'default' : (hasEmployeeCompletion && requiresTrainer) ? 'secondary' : (a.status === 'in_progress' ? 'secondary' : 'outline');
                 return (
                   <div key={a.id} className="flex items-center justify-between border rounded-lg p-4">
                     <div>
                       <div className="font-semibold">{a.module?.title}</div>
                       <div className="text-xs text-muted-foreground">v{a.module?.version}</div>
-                      {isCompleted && (
+                      {hasEmployeeCompletion && (
                         <div className="text-xs text-muted-foreground mt-1">Completed: {a?.completion?.completed_at ? new Date(a.completion.completed_at).toLocaleString() : '—'}</div>
+                      )}
+                      {hasEmployeeCompletion && requiresTrainer && (
+                        <div className="text-xs text-muted-foreground">Trainer: {a.trainer?.first_name} {a.trainer?.last_name} • {a.trainer?.email}</div>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant={badgeVariant}>{statusLabel}</Badge>
                       <Button variant="outline" onClick={() => openAssignmentMaterial(a)}>Open</Button>
-                      {!isCompleted && (
+                      {!hasEmployeeCompletion && (
                         <Button onClick={() => { setPendingAssignment(a); setConfirmOpen(true); }}>Mark Complete</Button>
                       )}
                     </div>

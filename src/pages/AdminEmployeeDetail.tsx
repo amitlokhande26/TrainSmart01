@@ -41,7 +41,12 @@ export default function AdminEmployeeDetail() {
         .select(`
           id,status,due_date,assigned_at,
           module:modules(id,title,version),
-          completion:completions(id,completed_at,signature:signatures(signed_name_snapshot,signed_email_snapshot,signed_at))
+          trainer:users!assignments_trainer_user_id_fkey(id,first_name,last_name,email,role),
+          completion:completions(
+            id,completed_at,
+            signature:signatures(signed_name_snapshot,signed_email_snapshot,signed_at),
+            trainer_signoff:trainer_signoffs(id,signed_name_snapshot,signed_email_snapshot,signed_at)
+          )
         `)
         .eq('assigned_to', id)
         .order('assigned_at', { ascending: false });
@@ -107,6 +112,12 @@ export default function AdminEmployeeDetail() {
                   const completedAt = completedAtIso ? new Date(completedAtIso).toLocaleString() : undefined;
                   const signedName: string | undefined = a?.completion?.signature?.signed_name_snapshot;
                   const signedEmail: string | undefined = a?.completion?.signature?.signed_email_snapshot;
+                  const trainerName = a?.trainer ? `${a.trainer.first_name} ${a.trainer.last_name}` : undefined;
+                  const hasTrainerSignoff = Boolean(a?.completion?.trainer_signoff?.id);
+                  const awaitingTrainer = hasCompletion && Boolean(a?.trainer?.id) && !hasTrainerSignoff;
+                  const trainerSignedAt = a?.completion?.trainer_signoff?.signed_at ? new Date(a.completion.trainer_signoff.signed_at).toLocaleString() : undefined;
+                  const trainerSignedName = a?.completion?.trainer_signoff?.signed_name_snapshot;
+                  const trainerSignedEmail = a?.completion?.trainer_signoff?.signed_email_snapshot;
                   return (
                     <div key={a.id} className="flex items-center justify-between border rounded-lg p-4">
                       <div>
@@ -114,6 +125,9 @@ export default function AdminEmployeeDetail() {
                         <div className="text-xs text-muted-foreground">v{a.module?.version}</div>
                         {hasCompletion && (
                           <div className="text-xs text-muted-foreground mt-1">Completed: {completedAt || '—'}</div>
+                        )}
+                        {awaitingTrainer && (
+                          <div className="text-xs text-muted-foreground">Awaiting Trainer Sign-Off: {trainerName} • {a.trainer?.email}</div>
                         )}
                         {hasCompletion && (
                           <div className="text-xs text-muted-foreground flex items-center gap-1">
@@ -128,10 +142,23 @@ export default function AdminEmployeeDetail() {
                             <span>Signed: {signedName || '—'} • {signedEmail || '—'}</span>
                           </div>
                         )}
+                        {hasTrainerSignoff && (
+                          <div className="text-xs text-muted-foreground flex items-center gap-1">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <BadgeCheck className="h-3 w-3 text-blue-500" />
+                                </TooltipTrigger>
+                                <TooltipContent>Trainer sign-off on completion</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            <span>Trainer Signed: {trainerSignedName || '—'} • {trainerSignedEmail || '—'} ({trainerSignedAt || '—'})</span>
+                          </div>
+                        )}
                       </div>
                       <div>
-                        <Badge variant={hasCompletion ? 'default' : a.status === 'in_progress' ? 'secondary' : 'outline'}>
-                          {hasCompletion ? 'Completed' : a.status === 'in_progress' ? 'In Progress' : 'Not Started'}
+                        <Badge variant={hasCompletion && !awaitingTrainer ? 'default' : (hasCompletion && awaitingTrainer) ? 'secondary' : a.status === 'in_progress' ? 'secondary' : 'outline'}>
+                          {hasCompletion ? (awaitingTrainer ? 'Awaiting Trainer Sign-Off' : 'Completed') : a.status === 'in_progress' ? 'In Progress' : 'Not Started'}
                         </Badge>
                       </div>
                     </div>

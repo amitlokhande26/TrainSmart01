@@ -43,8 +43,14 @@ export default function AdminAssignments() {
     queryFn: async () => (await supabase.from('users').select('id,first_name,last_name,email,role').eq('role','employee').order('first_name')).data || []
   });
 
+  const { data: trainers } = useQuery({
+    queryKey: ['trainers'],
+    queryFn: async () => (await supabase.from('users').select('id,first_name,last_name,email,role').in('role',['supervisor','manager']).order('first_name')).data || []
+  });
+
   const [moduleId, setModuleId] = React.useState<string | null>(null);
   const [employeeId, setEmployeeId] = React.useState<string | null>(null);
+  const [trainerId, setTrainerId] = React.useState<string | null>(null);
   const [dueDate, setDueDate] = React.useState<string>('');
   const [assigning, setAssigning] = React.useState(false);
   const [message, setMessage] = React.useState<string | null>(null);
@@ -58,6 +64,7 @@ export default function AdminAssignments() {
       const assignedBy = me.user?.id as string;
       const payload: any = { module_id: moduleId, assigned_to: employeeId, assigned_by: assignedBy };
       if (dueDate) payload.due_date = dueDate;
+      if (trainerId) payload.trainer_user_id = trainerId;
       const { error } = await supabase.from('assignments').insert(payload);
       if (error) throw error;
       setMessage('Assigned successfully');
@@ -111,6 +118,17 @@ export default function AdminAssignments() {
               <SelectContent>
                 {employees?.map((e: any) => (
                   <SelectItem key={e.id} value={e.id}>{e.first_name} {e.last_name} • {e.email}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={trainerId ?? undefined} onValueChange={(v) => setTrainerId(v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select Trainer (Supervisor/Manager)" />
+              </SelectTrigger>
+              <SelectContent>
+                {trainers?.map((t: any) => (
+                  <SelectItem key={t.id} value={t.id}>{t.first_name} {t.last_name} • {t.email} ({t.role})</SelectItem>
                 ))}
               </SelectContent>
             </Select>

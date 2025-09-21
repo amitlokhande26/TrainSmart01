@@ -2,7 +2,7 @@ import React from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
-type Role = 'admin' | 'employee';
+type Role = 'admin' | 'employee' | 'supervisor';
 
 interface ProtectedRouteProps {
   allowed: Role[];
@@ -18,7 +18,7 @@ export function ProtectedRoute({ allowed }: ProtectedRouteProps) {
         (session?.user?.app_metadata as any)?.role ||
         (session?.user?.user_metadata as any)?.role;
       const mapped: Role | null =
-        r === 'admin' || r === 'manager' ? 'admin' : r ? 'employee' : null;
+        r === 'admin' || r === 'manager' ? 'admin' : r === 'supervisor' ? 'supervisor' : r ? 'employee' : null;
       setRole(mapped);
     };
 
@@ -46,7 +46,7 @@ export function ProtectedRoute({ allowed }: ProtectedRouteProps) {
   if (!role) return <Navigate to="/" replace />;
 
   if (!allowed.includes(role)) {
-    return <Navigate to={role === 'admin' ? '/admin' : '/employee'} replace />;
+    return <Navigate to={role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : '/employee'} replace />;
   }
 
   return <Outlet />;

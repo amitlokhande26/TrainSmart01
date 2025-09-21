@@ -14,6 +14,7 @@ import AdminAssignments from "./pages/AdminAssignments";
 import AdminUsers from "./pages/AdminUsers";
 import AdminReports from "./pages/AdminReports";
 import AdminEmployeeDetail from "./pages/AdminEmployeeDetail";
+import Supervisor from "./pages/Supervisor";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,9 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route element={<ProtectedRoute allowed={["employee"]} />}>
             <Route path="/employee" element={<Employee />} />
+          </Route>
+          <Route element={<ProtectedRoute allowed={["supervisor"]} />}>
+            <Route path="/supervisor" element={<Supervisor />} />
           </Route>
           <Route element={<ProtectedRoute allowed={["admin"]} />}>
             <Route path="/admin" element={<AdminDashboard />} />

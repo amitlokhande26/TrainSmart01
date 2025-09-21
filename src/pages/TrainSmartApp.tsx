@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 // Avoid importing types to prevent tooling issues in some environments
 import logo from '@/assets/logo.png';
 
-type UserType = 'admin' | 'employee' | null;
+type UserType = 'admin' | 'employee' | 'supervisor' | null;
 
 export function TrainSmartApp() {
   const [user, setUser] = useState<{
@@ -25,7 +25,7 @@ export function TrainSmartApp() {
       const role: string | undefined = (session.user.app_metadata as any)?.role || (session.user.user_metadata as any)?.role;
       const email = session.user.email || '';
       const displayName = (session.user.user_metadata as any)?.full_name || email || 'User';
-      const mappedRole: UserType = role === 'admin' || role === 'manager' ? 'admin' : 'employee';
+      const mappedRole: UserType = role === 'admin' || role === 'manager' ? 'admin' : role === 'supervisor' ? 'supervisor' : 'employee';
       setUser({ type: mappedRole, name: displayName });
     };
 
@@ -44,7 +44,7 @@ export function TrainSmartApp() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleLogin = (_userType: 'admin' | 'employee', _userName: string) => {
+  const handleLogin = (_userType: 'admin' | 'employee' | 'supervisor', _userName: string) => {
     // No-op: the auth state listener will set the user based on Supabase session and role
   };
 
@@ -106,6 +106,12 @@ export function TrainSmartApp() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {user.type === 'employee' ? (
           <EmployeeDashboard userName={user.name} />
+        ) : user.type === 'supervisor' ? (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-foreground mb-4">Supervisor</h2>
+            <p className="text-muted-foreground mb-6">Use the Sign Offs tab in the top navigation to approve your trainees.</p>
+            <a href="/supervisor" className="underline">Open Sign Offs</a>
+          </div>
         ) : (
           <div className="text-center py-12">
             <h2 className="text-2xl font-bold text-foreground mb-4">Admin Dashboard</h2>

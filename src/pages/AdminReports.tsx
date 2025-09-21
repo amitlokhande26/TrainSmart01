@@ -36,6 +36,7 @@ export default function AdminReports() {
           id, due_date,
           module:modules(title,version),
           user:users(first_name,last_name,email),
+          trainer:users!assignments_trainer_user_id_fkey(first_name,last_name,email,role),
           completion:completions(id, completed_at, signature:signatures(signed_name_snapshot,signed_email_snapshot,signed_at))
         `)
         .order('id', { ascending: false });
@@ -54,6 +55,8 @@ export default function AdminReports() {
           signed_name: row.completion?.signature?.signed_name_snapshot,
           signed_email: row.completion?.signature?.signed_email_snapshot,
           signed_at: row.completion?.signature?.signed_at,
+          trainer_name: row.trainer ? `${row.trainer.first_name} ${row.trainer.last_name}` : undefined,
+          trainer_email: row.trainer?.email,
         }));
       // Apply filters
       if (fromDate) rows = rows.filter((r: any) => r.completed_at && new Date(r.completed_at) >= new Date(`${fromDate}T00:00:00Z`));
@@ -77,6 +80,7 @@ export default function AdminReports() {
       .channel('reports-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'completions' }, () => refetch())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'signatures' }, () => refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'trainer_signoffs' }, () => refetch())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [refetch]);
@@ -130,7 +134,7 @@ export default function AdminReports() {
                   </head><body>
                     <h1>Employee Training Log</h1>
                     <table><thead><tr>
-                    <th>Employee</th><th>Email</th><th>Module</th><th>Version</th><th>Due</th><th>Completed</th><th>Signed Name</th><th>Signed Email</th><th>Signed At</th>
+                    <th>Employee</th><th>Email</th><th>Module</th><th>Version</th><th>Due</th><th>Completed</th><th>Signed Name</th><th>Signed Email</th><th>Signed At</th><th>Trainer</th><th>Trainer Email</th>
                     </tr></thead><tbody>
                     ${rows.map((r:any)=>`<tr>
                       <td>${r.employee||''}</td>
@@ -142,6 +146,8 @@ export default function AdminReports() {
                       <td>${r.signed_name||''}</td>
                       <td>${r.signed_email||''}</td>
                       <td>${r.signed_at||''}</td>
+                      <td>${r.trainer_name||''}</td>
+                      <td>${r.trainer_email||''}</td>
                     </tr>`).join('')}
                     </tbody></table>
                     <script>window.onload=()=>window.print()</script>

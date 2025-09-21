@@ -3,9 +3,10 @@ import { Button } from '@/components/ui/button';
 import { LogOut, User, Settings } from 'lucide-react';
 import companyBanner from '@/assets/company-banner.png';
 import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
 interface HeaderProps {
-  userType: 'admin' | 'employee';
+  userType: 'admin' | 'employee' | 'supervisor';
   userName: string;
   onLogout: () => void;
 }
@@ -55,11 +56,11 @@ export function Header({ userType, userName, onLogout }: HeaderProps) {
           {/* Admin Nav */}
           {userType === 'admin' && (
             <nav className="hidden md:flex items-center gap-4 text-sm">
-              <a className="hover:underline" href="/admin">Dashboard</a>
-              <a className="hover:underline" href="/admin/library">Library</a>
-              <a className="hover:underline" href="/admin/assignments">Assignments</a>
-              <a className="hover:underline" href="/admin/users">Users</a>
-              <a className="hover:underline" href="/admin/reports">Reports</a>
+              <Link className="hover:underline" to="/admin">Dashboard</Link>
+              <Link className="hover:underline" to="/admin/library">Library</Link>
+              <Link className="hover:underline" to="/admin/assignments">Assignments</Link>
+              <Link className="hover:underline" to="/admin/users">Users</Link>
+              <Link className="hover:underline" to="/admin/reports">Reports</Link>
             </nav>
           )}
 
@@ -69,7 +70,7 @@ export function Header({ userType, userName, onLogout }: HeaderProps) {
               <User className="h-4 w-4" />
               <span>{userName}</span>
               <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
-                {userType === 'admin' ? 'Manager' : 'Employee'}
+                {userType === 'admin' ? 'Manager' : userType === 'supervisor' ? 'Supervisor' : 'Employee'}
               </span>
             </div>
             

@@ -11,7 +11,7 @@ import logo from '@/assets/logo.png';
 import { useNavigate } from 'react-router-dom';
 
 interface LoginFormProps {
-  onLogin: (userType: 'admin' | 'employee', userName: string) => void;
+  onLogin: (userType: 'admin' | 'employee' | 'supervisor', userName: string) => void;
 }
 
 export function LoginForm({ onLogin }: LoginFormProps) {
@@ -19,7 +19,9 @@ export function LoginForm({ onLogin }: LoginFormProps) {
   const [adminForm, setAdminForm] = useState({ email: '', password: '' });
   const roleToPath = (u: any) => {
     const r = (u?.app_metadata as any)?.role || (u?.user_metadata as any)?.role;
-    return r === 'admin' || r === 'manager' ? '/admin' : '/employee';
+    if (r === 'admin' || r === 'manager') return '/admin';
+    if (r === 'supervisor') return '/supervisor';
+    return '/employee';
   };
   const [employeeForm, setEmployeeForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
@@ -80,13 +82,18 @@ export function LoginForm({ onLogin }: LoginFormProps) {
         let userForNav = data.user;
         const currentRole = (data.user.app_metadata as any)?.role || (data.user.user_metadata as any)?.role;
         if (!currentRole) {
-          const { data: updated } = await supabase.auth.updateUser({ data: { role: 'employee' } });
+          // Check if this is a supervisor email pattern
+          const isSupervisor = data.user.email?.includes('supervisor');
+          const defaultRole = isSupervisor ? 'supervisor' : 'employee';
+          const { data: updated } = await supabase.auth.updateUser({ data: { role: defaultRole } });
           if (updated?.user) {
             userForNav = updated.user as any;
           }
         }
-        const displayName = (userForNav.user_metadata as any)?.full_name || userForNav.email || 'Employee';
-        onLogin('employee', displayName);
+        const finalRole = (userForNav.app_metadata as any)?.role || (userForNav.user_metadata as any)?.role;
+        const displayName = (userForNav.user_metadata as any)?.full_name || userForNav.email || 'User';
+        // Map supervisor account via server-side role into /supervisor route
+        onLogin(finalRole === 'supervisor' ? 'supervisor' : 'employee', displayName);
         navigate(roleToPath(userForNav), { replace: true });
       }
     } catch (err) {
