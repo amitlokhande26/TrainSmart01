@@ -26,7 +26,11 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('assignments')
-        .select('id,status,due_date,module:modules(id,title,storage_path,type,version)')
+        .select(`
+          id,status,due_date,
+          module:modules(id,title,storage_path,type,version),
+          completion:completions(id,completed_at,signature:signatures(signed_name_snapshot,signed_email_snapshot,signed_at))
+        `)
         .eq('assigned_to', userId as any)
         .order('assigned_at', { ascending: false });
       if (error) throw error;
@@ -35,9 +39,32 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
     enabled: !!userId,
   });
 
+  React.useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`assignments-changes-${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'assignments',
+          filter: `assigned_to=eq.${userId}`,
+        },
+        () => {
+          refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, refetch]);
+
   const totalAssigned = assignments.length;
-  const completedAssigned = assignments.filter((a: any) => a.status === 'completed').length;
-  const inProgressAssigned = assignments.filter((a: any) => a.status === 'in_progress').length;
+  const completedAssigned = assignments.filter((a: any) => (a?.completion?.id || a.status === 'completed')).length;
+  const inProgressAssigned = assignments.filter((a: any) => !a?.completion?.id && a.status === 'in_progress').length;
   const progressAssigned = totalAssigned > 0 ? (completedAssigned / totalAssigned) * 100 : 0;
 
   const openAssignmentMaterial = async (assignment: any) => {
@@ -73,7 +100,6 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
         user_agent: ua,
       });
       if (sErr) throw sErr;
-      await supabase.from('assignments').update({ status: 'completed' }).eq('id', assignment.id);
       await refetch();
     } catch {}
   };
@@ -127,23 +153,29 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
             <div className="text-sm text-muted-foreground">No assignments yet. Check back soon.</div>
           ) : (
             <div className="space-y-3">
-              {assignments.map((a: any) => (
-                <div key={a.id} className="flex items-center justify-between border rounded-lg p-4">
-                  <div>
-                    <div className="font-semibold">{a.module?.title}</div>
-                    <div className="text-xs text-muted-foreground">v{a.module?.version}</div>
+              {assignments.map((a: any) => {
+                const isCompleted = Boolean(a?.completion?.id) || a.status === 'completed';
+                const statusLabel = isCompleted ? 'Completed' : a.status === 'in_progress' ? 'In Progress' : 'Not Started';
+                const badgeVariant = isCompleted ? 'default' : a.status === 'in_progress' ? 'secondary' : 'outline';
+                return (
+                  <div key={a.id} className="flex items-center justify-between border rounded-lg p-4">
+                    <div>
+                      <div className="font-semibold">{a.module?.title}</div>
+                      <div className="text-xs text-muted-foreground">v{a.module?.version}</div>
+                      {isCompleted && (
+                        <div className="text-xs text-muted-foreground mt-1">Completed: {a?.completion?.completed_at ? new Date(a.completion.completed_at).toLocaleString() : '—'}</div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={badgeVariant}>{statusLabel}</Badge>
+                      <Button variant="outline" onClick={() => openAssignmentMaterial(a)}>Open</Button>
+                      {!isCompleted && (
+                        <Button onClick={() => { setPendingAssignment(a); setConfirmOpen(true); }}>Mark Complete</Button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={a.status === 'completed' ? 'default' : a.status === 'in_progress' ? 'secondary' : 'outline'}>
-                      {a.status}
-                    </Badge>
-                    <Button variant="outline" onClick={() => openAssignmentMaterial(a)}>Open</Button>
-                    {a.status !== 'completed' && (
-                      <Button onClick={() => { setPendingAssignment(a); setConfirmOpen(true); }}>Mark Complete</Button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
