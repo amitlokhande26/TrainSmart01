@@ -41,7 +41,7 @@ export default function AdminUsers() {
     queryFn: async () => (await supabase.from('users').select('*').eq('role','employee').order('first_name')).data || []
   });
 
-  const { data: supervisors, refetchSupervisors } = useQuery({
+  const { data: supervisors, refetch: refetchSupervisors } = useQuery({
     queryKey: ['supervisors-list'],
     queryFn: async () => (await supabase.from('users').select('*').eq('role','supervisor').order('first_name')).data || []
   });
