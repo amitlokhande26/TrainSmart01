@@ -1,9 +1,10 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { LogOut, User, Settings } from 'lucide-react';
-import companyBanner from '@/assets/company-banner.png';
+import companyBanner from '@/assets/idl-banner.png.png';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
+import { AdminTabStyle } from './AdminTabStyle';
 
 interface HeaderProps {
   userType: 'admin' | 'employee' | 'supervisor';
@@ -29,18 +30,20 @@ export function Header({ userType, userName, onLogout }: HeaderProps) {
   }, [userType]);
 
   return (
-    <header className="bg-card border-b border-border shadow-card">
+    <header className="bg-card border-b border-border shadow-card m-0 p-0">
       {/* Company Banner */}
       <div className="w-full bg-gray-100">
         <img 
           src={companyBanner} 
-          alt="Company Banner" 
-          className="w-full h-24 object-cover"
+          alt="IDL - Every Drop Matters" 
+          className="w-full h-60 object-cover"
+          style={{
+            objectPosition: 'center 45%'
+          }}
           onError={(e) => {
             console.error('Banner image failed to load:', e);
-            e.currentTarget.style.display = 'block';
-            e.currentTarget.style.backgroundColor = '#f3f4f6';
-            e.currentTarget.style.border = '2px dashed #d1d5db';
+            e.currentTarget.style.display = 'none';
+            e.currentTarget.parentElement!.innerHTML = '<div class="w-full bg-gradient-to-r from-orange-400 via-yellow-400 via-pink-400 to-purple-500 h-16 flex items-center justify-center"><div class="text-center"><div class="text-2xl font-bold text-white mb-1">IDL</div><div class="text-sm text-white font-semibold">EVERY DROP MATTERS</div></div></div>';
           }}
         />
       </div>
@@ -50,18 +53,14 @@ export function Header({ userType, userName, onLogout }: HeaderProps) {
         <div className="flex justify-between items-center h-16">
           {/* TrainSmart Brand */}
           <div className="flex items-center">
-            <span className="text-2xl font-bold text-primary">Train</span>
-            <span className="text-2xl font-bold text-accent">Smart</span>
+            <span className="text-3xl font-bold text-primary">Train</span>
+            <span className="text-3xl font-bold text-accent">Smart</span>
           </div>
           {/* Admin Nav */}
           {userType === 'admin' && (
-            <nav className="hidden md:flex items-center gap-4 text-sm">
-              <Link className="hover:underline" to="/admin">Dashboard</Link>
-              <Link className="hover:underline" to="/admin/library">Library</Link>
-              <Link className="hover:underline" to="/admin/assignments">Assignments</Link>
-              <Link className="hover:underline" to="/admin/users">Users</Link>
-              <Link className="hover:underline" to="/admin/reports">Reports</Link>
-            </nav>
+            <div className="hidden md:flex items-center">
+              <AdminTabStyle />
+            </div>
           )}
 
           {/* User Info and Actions */}
