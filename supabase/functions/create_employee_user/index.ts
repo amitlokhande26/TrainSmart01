@@ -64,7 +64,7 @@ export default async function handler(req: Request): Promise<Response> {
     // Insert sidecar profile
     const { error: profileErr } = await adminClient
       .from('users')
-      .insert({ id: newUserId, first_name: body.first_name, last_name: body.last_name, email: body.email, role: 'employee' });
+      .insert({ id: newUserId, first_name: body.first_name, last_name: body.last_name, email: body.email, role: 'employee', is_active: true });
     if (profileErr) return new Response(profileErr.message, { status: 400, headers: { ...corsHeaders, 'Content-Type': 'text/plain' } });
 
     // Optional initial assignments

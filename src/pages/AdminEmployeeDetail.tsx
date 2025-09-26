@@ -5,14 +5,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { useQuery } from '@tanstack/react-query';
-import { BadgeCheck } from 'lucide-react';
+import { BadgeCheck, Edit, Save } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 
 export default function AdminEmployeeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [name, setName] = React.useState<string>('Admin');
+  
+  // Edit form state
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editFirstName, setEditFirstName] = React.useState('');
+  const [editLastName, setEditLastName] = React.useState('');
+  const [editIsActive, setEditIsActive] = React.useState(true);
+  const [isUpdating, setIsUpdating] = React.useState(false);
+  const [updateMessage, setUpdateMessage] = React.useState<string | null>(null);
+
 
   React.useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -22,15 +34,27 @@ export default function AdminEmployeeDetail() {
     });
   }, []);
 
-  const { data: employee } = useQuery({
+  const { data: employee, error: employeeError, isLoading: employeeLoading } = useQuery({
     queryKey: ['employee', id],
     queryFn: async () => {
       if (!id) return null;
-      const { data } = await supabase.from('users').select('*').eq('id', id).single();
+      const { data, error } = await supabase.from('users').select('id,first_name,last_name,email,role,is_active,created_at').eq('id', id).single();
+      if (error) {
+        throw error;
+      }
       return data as any;
     },
     enabled: !!id,
   });
+
+  // Populate edit form when employee data loads
+  React.useEffect(() => {
+    if (employee) {
+      setEditFirstName(employee.first_name || '');
+      setEditLastName(employee.last_name || '');
+      setEditIsActive(employee.is_active !== false); // Default to true if undefined
+    }
+  }, [employee]);
 
   const { data: assignments = [] } = useQuery({
     queryKey: ['employee-assignments', id],
@@ -79,6 +103,39 @@ export default function AdminEmployeeDetail() {
     return () => { supabase.removeChannel(channel); };
   }, [id]);
 
+  const updateUserDetails = async () => {
+    if (!id || !editFirstName.trim() || !editLastName.trim()) {
+      setUpdateMessage('Please fill in all required fields');
+      return;
+    }
+
+    setIsUpdating(true);
+    setUpdateMessage(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('update_user_details', {
+        body: {
+          user_id: id,
+          first_name: editFirstName.trim(),
+          last_name: editLastName.trim(),
+          is_active: editIsActive
+        }
+      });
+
+      if (error) throw error;
+
+      setUpdateMessage('User details updated successfully!');
+      setIsEditing(false);
+      
+      // Refresh the page to update all data
+      window.location.reload();
+    } catch (e: any) {
+      setUpdateMessage(e?.message || 'Failed to update user details');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header userType="admin" userName={name} onLogout={async () => supabase.auth.signOut()} />
@@ -88,16 +145,113 @@ export default function AdminEmployeeDetail() {
             <h2 className="text-2xl font-bold text-foreground">Employee Assignments</h2>
             <p className="text-muted-foreground">View training modules assigned to this employee.</p>
           </div>
-          <Button variant="outline" onClick={() => navigate('/admin/users')}>Back to Users</Button>
+          <div className="flex items-center gap-3">
+            {employee && (
+              <div className="flex items-center gap-2">
+                <div className={`text-xs font-medium px-2 py-1 rounded-full ${
+                  employee.is_active 
+                    ? 'bg-green-100 text-green-700 border border-green-200' 
+                    : 'bg-gray-100 text-gray-600 border border-gray-200'
+                }`}>
+                  {employee.is_active ? '✓ Active' : '✗ Inactive'}
+                </div>
+                {!isEditing ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Edit className="h-4 w-4" />
+                    Edit User
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setIsEditing(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      onClick={updateUserDetails}
+                      disabled={isUpdating || !editFirstName.trim() || !editLastName.trim()}
+                      className="flex items-center gap-2"
+                    >
+                      <Save className="h-4 w-4" />
+                      {isUpdating ? 'Saving...' : 'Save'}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+            <Button variant="outline" onClick={() => navigate('/admin/users')}>Back to Users</Button>
+          </div>
         </div>
+
+        {/* Edit Form */}
+        {isEditing && employee && (
+          <Card className="border-blue-200 bg-blue-50/30">
+            <CardHeader>
+              <CardTitle className="text-blue-900">Edit User Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="editFirstName">First Name</Label>
+                  <Input
+                    id="editFirstName"
+                    value={editFirstName}
+                    onChange={(e) => setEditFirstName(e.target.value)}
+                    placeholder="Enter first name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editLastName">Last Name</Label>
+                  <Input
+                    id="editLastName"
+                    value={editLastName}
+                    onChange={(e) => setEditLastName(e.target.value)}
+                    placeholder="Enter last name"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="editIsActive"
+                  checked={editIsActive}
+                  onCheckedChange={setEditIsActive}
+                />
+                <Label htmlFor="editIsActive">
+                  {editIsActive ? 'Active' : 'Inactive'} in organization
+                </Label>
+              </div>
+              {updateMessage && (
+                <div className={`text-sm p-3 rounded-md ${
+                  updateMessage.includes('successfully') 
+                    ? 'bg-green-100 text-green-800 border border-green-200' 
+                    : 'bg-red-100 text-red-800 border border-red-200'
+                }`}>
+                  {updateMessage}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
             <CardTitle>
-              {employee ? (
+              {employeeError ? (
+                <span className="text-red-600">Error loading employee: {employeeError.message}</span>
+              ) : employeeLoading ? (
+                'Loading employee...'
+              ) : employee ? (
                 <span>{employee.first_name} {employee.last_name} <span className="text-sm text-muted-foreground">({employee.email})</span></span>
               ) : (
-                'Loading employee...'
+                <span className="text-orange-600">Employee not found</span>
               )}
             </CardTitle>
           </CardHeader>
@@ -172,5 +326,3 @@ export default function AdminEmployeeDetail() {
     </div>
   );
 }
-
-

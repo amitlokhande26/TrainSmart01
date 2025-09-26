@@ -85,7 +85,8 @@ export default async function handler(req: Request): Promise<Response> {
         first_name: body.first_name,
         last_name: body.last_name,
         email: body.email,
-        role: 'supervisor'
+        role: 'supervisor',
+        is_active: true
       });
 
     if (profileError) {

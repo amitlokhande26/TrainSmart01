@@ -27,6 +27,7 @@ export default function AdminUsers() {
   // Search functionality
   const [searchTerm, setSearchTerm] = React.useState('');
   const [roleFilter, setRoleFilter] = React.useState<'all' | 'employee' | 'supervisor' | 'manager'>('all');
+  const [statusFilter, setStatusFilter] = React.useState<'all' | 'active' | 'inactive'>('all');
   const [debouncedSearch, setDebouncedSearch] = React.useState('');
   const [isUsersListExpanded, setIsUsersListExpanded] = React.useState(false);
 
@@ -52,9 +53,9 @@ export default function AdminUsers() {
 
   // Combined users query with search and filtering
   const { data: allUsers, refetch: refetchAllUsers } = useQuery({
-    queryKey: ['all-users', debouncedSearch, roleFilter],
+    queryKey: ['all-users', debouncedSearch, roleFilter, statusFilter],
     queryFn: async () => {
-      let query = supabase.from('users').select('*');
+      let query = supabase.from('users').select('id,first_name,last_name,email,role,is_active,created_at');
       
       // Apply role filter
       if (roleFilter !== 'all') {
@@ -63,6 +64,11 @@ export default function AdminUsers() {
         } else {
           query = query.eq('role', roleFilter);
         }
+      }
+      
+      // Apply status filter
+      if (statusFilter !== 'all') {
+        query = query.eq('is_active', statusFilter === 'active');
       }
       
       // Apply search filter
@@ -254,7 +260,7 @@ export default function AdminUsers() {
               Search Users
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
+          <CardContent className="grid gap-4 md:grid-cols-3">
             <Input 
               placeholder="Search by name or email..." 
               value={searchTerm}
@@ -270,6 +276,16 @@ export default function AdminUsers() {
                 <SelectItem value="employee">Employees Only</SelectItem>
                 <SelectItem value="supervisor">Supervisors Only</SelectItem>
                 <SelectItem value="manager">Managers Only</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={(value: 'all' | 'active' | 'inactive') => setStatusFilter(value)}>
+              <SelectTrigger className="border-gray-200 focus:border-gray-400">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active Only</SelectItem>
+                <SelectItem value="inactive">Inactive Only</SelectItem>
               </SelectContent>
             </Select>
           </CardContent>
@@ -320,18 +336,27 @@ export default function AdminUsers() {
                     <div className="text-sm text-gray-600">{u.email}</div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className={`text-xs font-medium px-3 py-1 rounded-full ${
-                      u.role === 'supervisor' 
-                        ? 'bg-green-100 text-green-800 border border-green-200' 
-                        : u.role === 'manager' || u.role === 'admin'
-                        ? 'bg-purple-100 text-purple-800 border border-purple-200'
-                        : 'bg-orange-100 text-orange-800 border border-orange-200'
-                    }`}>
-                      {u.role === 'supervisor' 
-                        ? '🛡️ Supervisor' 
-                        : u.role === 'manager' || u.role === 'admin'
-                        ? '👑 Manager'
-                        : '👤 Employee'}
+                    <div className="flex flex-col items-end gap-1">
+                      <div className={`text-xs font-medium px-3 py-1 rounded-full ${
+                        u.role === 'supervisor' 
+                          ? 'bg-green-100 text-green-800 border border-green-200' 
+                          : u.role === 'manager' || u.role === 'admin'
+                          ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                          : 'bg-orange-100 text-orange-800 border border-orange-200'
+                      }`}>
+                        {u.role === 'supervisor' 
+                          ? '🛡️ Supervisor' 
+                          : u.role === 'manager' || u.role === 'admin'
+                          ? '👑 Manager'
+                          : '👤 Employee'}
+                      </div>
+                      <div className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                        u.is_active 
+                          ? 'bg-green-100 text-green-700 border border-green-200' 
+                          : 'bg-gray-100 text-gray-600 border border-gray-200'
+                      }`}>
+                        {u.is_active ? '✓ Active' : '✗ Inactive'}
+                      </div>
                     </div>
                     {u.role === 'supervisor' && (
                       <Button 
