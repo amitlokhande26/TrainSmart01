@@ -54,7 +54,7 @@ export function Header({ userType, userName, onLogout }: HeaderProps) {
           {/* TrainSmart Brand */}
           <div className="flex items-center">
             <span className="text-3xl font-bold text-primary">Train</span>
-            <span className="text-3xl font-bold text-accent">Smart</span>
+            <span className="text-3xl font-bold text-accent">Smart™</span>
           </div>
           {/* Admin Nav */}
           {userType === 'admin' && (

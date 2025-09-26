@@ -54,12 +54,25 @@ export default function AdminLibrary() {
 
   const [title, setTitle] = React.useState('');
   const [categoryId, setCategoryId] = React.useState<string | undefined>(undefined);
+  const [uploadLineId, setUploadLineId] = React.useState<string | null>(null);
+  const [uploadCategoryId, setUploadCategoryId] = React.useState<string | null>(null);
   const [file, setFile] = React.useState<File | null>(null);
   const [uploading, setUploading] = React.useState(false);
   const [message, setMessage] = React.useState<string | null>(null);
 
+  // Separate categories query for upload section
+  const { data: uploadCategories } = useQuery({
+    queryKey: ['upload-categories', uploadLineId],
+    queryFn: async () => {
+      if (!uploadLineId) return [] as any[];
+      const { data } = await supabase.from('categories').select('*').eq('line_id', uploadLineId).order('name');
+      return data || [];
+    },
+    enabled: !!uploadLineId
+  });
+
   const handleUpload = async () => {
-    if (!selectedLine || !file || !title) return;
+    if (!uploadLineId || !uploadCategoryId || !file || !title) return;
     setUploading(true);
     setMessage(null);
     try {
@@ -70,13 +83,13 @@ export default function AdminLibrary() {
       const type = ['pdf','doc','docx'].includes(ext) ? 'doc' : ['ppt','pptx'].includes(ext) ? 'ppt' : ['mp4','mov','webm'].includes(ext) ? 'video' : 'doc';
       const { error: insErr } = await supabase.from('modules').insert({
         title,
-        line_id: selectedLine,
-        category_id: categoryId || null,
+        line_id: uploadLineId,
+        category_id: uploadCategoryId,
         type,
         storage_path: path
       });
       if (insErr) throw insErr;
-      setTitle(''); setCategoryId(undefined); setFile(null);
+      setTitle(''); setUploadLineId(null); setUploadCategoryId(null); setFile(null);
       await refetch();
       setMessage('Uploaded successfully');
     } catch (e: any) {
@@ -128,23 +141,33 @@ export default function AdminLibrary() {
           <CardHeader>
             <CardTitle>Upload New Module</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-4">
+          <CardContent className="grid gap-4 md:grid-cols-5">
             <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
-            <Select value={categoryId} onValueChange={(v) => setCategoryId(v)}>
+            <Select value={uploadLineId || ""} onValueChange={(v) => { setUploadLineId(v); setUploadCategoryId(null); }}>
               <SelectTrigger>
-                <SelectValue placeholder="Category (optional)" />
+                <SelectValue placeholder="Select Line" />
               </SelectTrigger>
               <SelectContent>
-                {categories?.map((c: any) => (
+                {lines?.map((l: any) => (
+                  <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={uploadCategoryId || ""} onValueChange={(v) => setUploadCategoryId(v)} disabled={!uploadLineId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select Category" />
+              </SelectTrigger>
+              <SelectContent>
+                {uploadCategories?.map((c: any) => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-            <Button onClick={handleUpload} disabled={!file || !title || !selectedLine || uploading}>
+            <Button onClick={handleUpload} disabled={!file || !title || !uploadLineId || !uploadCategoryId || uploading}>
               {uploading ? 'Uploading...' : 'Upload'}
             </Button>
-            {message && <div className="md:col-span-4 text-sm text-muted-foreground">{message}</div>}
+            {message && <div className="md:col-span-5 text-sm text-muted-foreground">{message}</div>}
           </CardContent>
         </Card>
 
@@ -163,8 +186,37 @@ export default function AdminLibrary() {
                     if (data?.signedUrl) window.open(data.signedUrl, '_blank');
                   }}>Preview</Button>
                   <Button variant="destructive" size="sm" onClick={async () => {
-                    await supabase.from('modules').delete().eq('id', m.id);
-                    await refetch();
+                    // Confirmation dialog
+                    const confirmed = window.confirm(`Are you sure you want to delete "${m.title}"? This action cannot be undone.`);
+                    if (!confirmed) return;
+                    
+                    try {
+                      // Delete file from storage bucket first
+                      const { error: storageError } = await supabase.storage
+                        .from('training-materials')
+                        .remove([m.storage_path]);
+                      
+                      if (storageError) {
+                        console.error('Error deleting file from storage:', storageError);
+                        // Continue with database deletion even if storage deletion fails
+                      }
+                      
+                      // Delete record from modules table
+                      const { error: dbError } = await supabase
+                        .from('modules')
+                        .delete()
+                        .eq('id', m.id);
+                      
+                      if (dbError) {
+                        console.error('Error deleting module from database:', dbError);
+                        return;
+                      }
+                      
+                      // Refresh the UI
+                      await refetch();
+                    } catch (error) {
+                      console.error('Error deleting module:', error);
+                    }
                   }}>Delete</Button>
                 </div>
               </div>
