@@ -22,6 +22,7 @@ export function AdminTabStyle({ className }: AdminTabStyleProps) {
     { path: '/admin/library', label: 'Library' },
     { path: '/admin/assignments', label: 'Assignments' },
     { path: '/admin/users', label: 'Users' },
+    { path: '/admin/signoffs', label: 'Sign Offs' },
     { path: '/admin/reports', label: 'Reports' },
   ];
 

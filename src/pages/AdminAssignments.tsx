@@ -28,6 +28,14 @@ export default function AdminAssignments() {
   });
 
   const [selectedLine, setSelectedLine] = React.useState<string | null>(null);
+  const [selectedUserRole, setSelectedUserRole] = React.useState<string | null>(null);
+  const [moduleId, setModuleId] = React.useState<string | null>(null);
+  const [employeeId, setEmployeeId] = React.useState<string | null>(null);
+  const [trainerId, setTrainerId] = React.useState<string | null>(null);
+  const [dueDate, setDueDate] = React.useState<string>('');
+  const [assigning, setAssigning] = React.useState(false);
+  const [message, setMessage] = React.useState<string | null>(null);
+
   const { data: modules } = useQuery({
     queryKey: ['modules-for-assign', selectedLine],
     queryFn: async () => {
@@ -40,20 +48,19 @@ export default function AdminAssignments() {
 
   const { data: employees } = useQuery({
     queryKey: ['employees'],
-    queryFn: async () => (await supabase.from('users').select('id,first_name,last_name,email,role').eq('role','employee').order('first_name')).data || []
+    queryFn: async () => (await supabase.from('users').select('id,first_name,last_name,email,role').in('role',['employee','supervisor']).order('first_name')).data || []
   });
 
   const { data: trainers } = useQuery({
-    queryKey: ['trainers'],
-    queryFn: async () => (await supabase.from('users').select('id,first_name,last_name,email,role').in('role',['supervisor','manager']).order('first_name')).data || []
+    queryKey: ['trainers', selectedUserRole],
+    queryFn: async () => {
+      // If selected user is supervisor, only show managers as trainers
+      // If selected user is employee, show both supervisors and managers
+      const roles = selectedUserRole === 'supervisor' ? ['manager'] : ['supervisor', 'manager'];
+      return (await supabase.from('users').select('id,first_name,last_name,email,role').in('role', roles).order('first_name')).data || []
+    },
+    enabled: !!selectedUserRole
   });
-
-  const [moduleId, setModuleId] = React.useState<string | null>(null);
-  const [employeeId, setEmployeeId] = React.useState<string | null>(null);
-  const [trainerId, setTrainerId] = React.useState<string | null>(null);
-  const [dueDate, setDueDate] = React.useState<string>('');
-  const [assigning, setAssigning] = React.useState(false);
-  const [message, setMessage] = React.useState<string | null>(null);
 
   const assignModule = async () => {
     if (!moduleId || !employeeId) return;
@@ -81,7 +88,7 @@ export default function AdminAssignments() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
         <div>
           <h2 className="text-2xl font-bold text-foreground mb-2">Assignments</h2>
-          <p className="text-muted-foreground">Assign training modules to employees and set due dates.</p>
+          <p className="text-muted-foreground">Assign training modules to employees and supervisors. Set appropriate trainers based on user role.</p>
         </div>
 
         <Card>
@@ -111,20 +118,32 @@ export default function AdminAssignments() {
               </SelectContent>
             </Select>
 
-            <Select value={employeeId ?? undefined} onValueChange={(v) => setEmployeeId(v)}>
+            <Select value={employeeId ?? undefined} onValueChange={(v) => {
+              setEmployeeId(v);
+              setTrainerId(null); // Reset trainer when user changes
+              // Find the selected user's role
+              const selectedUser = employees?.find((e: any) => e.id === v);
+              setSelectedUserRole(selectedUser?.role || null);
+            }}>
               <SelectTrigger>
-                <SelectValue placeholder="Select Employee" />
+                <SelectValue placeholder="Select User" />
               </SelectTrigger>
               <SelectContent>
                 {employees?.map((e: any) => (
-                  <SelectItem key={e.id} value={e.id}>{e.first_name} {e.last_name} • {e.email}</SelectItem>
+                  <SelectItem key={e.id} value={e.id}>
+                    {e.first_name} {e.last_name} • {e.email} ({e.role})
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
             <Select value={trainerId ?? undefined} onValueChange={(v) => setTrainerId(v)}>
               <SelectTrigger>
-                <SelectValue placeholder="Select Trainer (Supervisor/Manager)" />
+                <SelectValue placeholder={
+                  selectedUserRole === 'supervisor' 
+                    ? "Select Trainer (Manager)" 
+                    : "Select Trainer (Supervisor/Manager)"
+                } />
               </SelectTrigger>
               <SelectContent>
                 {trainers?.map((t: any) => (

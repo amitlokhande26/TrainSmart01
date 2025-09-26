@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CheckCircle, Clock, AlertCircle, Users, BookOpen, TrendingUp, Download, FileText, ChevronDown, Calendar as CalendarIcon } from 'lucide-react';
+import { CheckCircle, Clock, AlertCircle, Users, BookOpen, TrendingUp, Download, FileText, ChevronDown, Calendar as CalendarIcon, RefreshCw } from 'lucide-react';
 import { exportTrainingReportsExcelFormatted as exportFormattedExcel } from '@/utils/excelFormattedExport';
 
 // Format training data for Excel export
@@ -175,7 +175,7 @@ export default function AdminReports() {
   });
 
   // Step 5: Add all filtering
-  const { data: employeeLogs, isLoading, error: queryError } = useQuery({
+  const { data: employeeLogs, isLoading, error: queryError, refetch } = useQuery({
     queryKey: ['step5-all-filters', debouncedSearch, fromDate, toDate, selectedLine, selectedCategory, selectedModule],
     queryFn: async () => {
       try {
@@ -197,7 +197,7 @@ export default function AdminReports() {
         // Get assignments separately (safe query)
         const { data: assignments } = await supabase
         .from('assignments')
-          .select('id, due_date, module_id, assigned_to');
+          .select('id, due_date, module_id, assigned_to, trainer_user_id');
         
         // Get modules separately (safe query)
         const { data: modules } = await supabase
@@ -213,13 +213,20 @@ export default function AdminReports() {
         const { data: lines } = await supabase.from('lines').select('id, name');
         const { data: categories } = await supabase.from('categories').select('id, name');
         
+        // Get trainer signoffs (real data)
+        const { data: trainerSignoffs } = await supabase
+          .from('trainer_signoffs')
+          .select('id, completion_id, signed_name_snapshot, signed_email_snapshot, signed_at');
+        
         // Create rows with real data where available
         const rows = (completions || []).map((completion: any, index: number) => {
           const assignment = (assignments || []).find((a: any) => a.id === completion.assignment_id);
           const module = (modules || []).find((m: any) => m.id === assignment?.module_id);
           const user = (users || []).find((u: any) => u.id === assignment?.assigned_to);
+          const trainer = (users || []).find((u: any) => u.id === assignment?.trainer_user_id);
           const line = (lines || []).find((l: any) => l.id === module?.line_id);
           const category = (categories || []).find((c: any) => c.id === module?.category_id);
+          const trainerSignoff = (trainerSignoffs || []).find((ts: any) => ts.completion_id === completion.id);
           
           return {
             completion_id: completion.id,
@@ -234,13 +241,13 @@ export default function AdminReports() {
             signed_name: user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Employee Signature' : 'Employee Signature',
             signed_email: user?.email || `employee${index + 1}@example.com`,
             signed_at: completion.completed_at,
-            trainer_name: 'Trainer',
-            trainer_email: 'trainer@example.com',
-            trainer_signed_name: 'Trainer Signature',
-            trainer_signed_email: 'trainer@example.com',
-            trainer_signed_at: completion.completed_at,
+            trainer_name: trainer ? `${trainer.first_name || ''} ${trainer.last_name || ''}`.trim() || 'Unknown Trainer' : 'No Trainer Assigned',
+            trainer_email: trainer?.email || 'No Trainer Assigned',
+            trainer_signed_name: trainerSignoff?.signed_name_snapshot || 'Not Signed Off',
+            trainer_signed_email: trainerSignoff?.signed_email_snapshot || 'Not Signed Off',
+            trainer_signed_at: trainerSignoff?.signed_at || null,
             assignment_id: assignment?.id || `assignment-${index + 1}`,
-            has_trainer_signoff: true,
+            has_trainer_signoff: !!trainerSignoff,
           };
         });
         
@@ -305,7 +312,10 @@ export default function AdminReports() {
         setError(errorMessage);
         return [];
       }
-    }
+    },
+    staleTime: 0, // Always consider data stale for real-time updates
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
   });
 
   // Calculate summary statistics
@@ -577,6 +587,16 @@ export default function AdminReports() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                
+                <Button 
+                  onClick={() => refetch()} 
+                  disabled={isLoading}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
                 
                 <Button onClick={handleGeneratePdf} disabled={loading} className="flex items-center gap-2">
                   {loading ? 'Generating...' : 'Generate PDF'}

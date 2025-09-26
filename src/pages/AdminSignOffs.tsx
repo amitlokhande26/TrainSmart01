@@ -8,8 +8,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 
-export default function Supervisor() {
-  const [name, setName] = React.useState<string>('Supervisor');
+export default function AdminSignOffs() {
+  const [name, setName] = React.useState<string>('Admin');
   const [signOpen, setSignOpen] = React.useState(false);
   const [pendingCompletion, setPendingCompletion] = React.useState<any | null>(null);
   const [signedName, setSignedName] = React.useState('');
@@ -18,7 +18,7 @@ export default function Supervisor() {
   React.useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       const u = data.user;
-      const display = (u?.user_metadata as any)?.full_name || u?.email || 'Supervisor';
+      const display = (u?.user_metadata as any)?.full_name || u?.email || 'Admin';
       setName(display);
     });
   }, []);
@@ -30,11 +30,11 @@ export default function Supervisor() {
   const userId = session?.user?.id;
 
   const { data: allAssignments = [], refetch } = useQuery({
-    queryKey: ['supervisor-assignments', userId],
+    queryKey: ['admin-trainer-assignments', userId],
     queryFn: async () => {
       if (!userId) return [] as any[];
       
-      // Get all assignments where supervisor is either the trainer OR the trainee
+      // Get all assignments for this admin/manager as trainer
       const { data: assignments, error: assignmentsError } = await supabase
         .from('assignments')
         .select(`
@@ -46,15 +46,13 @@ export default function Supervisor() {
           module_id,
           assigned_to
         `)
-        .or(`trainer_user_id.eq.${userId},assigned_to.eq.${userId}`)
+        .eq('trainer_user_id', userId)
         .order('assigned_at', { ascending: false });
       
       if (assignmentsError) {
         console.error('Error fetching assignments:', assignmentsError);
-        console.error('Assignments error details:', assignmentsError);
         throw assignmentsError;
       }
-      
       
       // Get modules for these assignments
       const moduleIds = [...new Set(assignments?.map(a => a.module_id) || [])];
@@ -72,16 +70,14 @@ export default function Supervisor() {
         }
       }
       
-      // Get users for these assignments (both trainees and trainers)
-      const traineeIds = [...new Set(assignments?.map(a => a.assigned_to) || [])];
-      const trainerIds = [...new Set(assignments?.map(a => a.trainer_user_id).filter(Boolean) || [])];
-      const allUserIds = [...new Set([...traineeIds, ...trainerIds])];
+      // Get users for these assignments
+      const userIds = [...new Set(assignments?.map(a => a.assigned_to) || [])];
       let users: any[] = [];
-      if (allUserIds.length > 0) {
+      if (userIds.length > 0) {
         const { data: usersData, error: usersError } = await supabase
           .from('users')
           .select('id, first_name, last_name, email, role')
-          .in('id', allUserIds);
+          .in('id', userIds);
         
         if (usersError) {
           console.error('Error fetching users:', usersError);
@@ -89,7 +85,6 @@ export default function Supervisor() {
           users = usersData || [];
         }
       }
-      
       
       // Get completions for these assignments
       const assignmentIds = assignments?.map(a => a.id) || [];
@@ -107,7 +102,6 @@ export default function Supervisor() {
         }
       }
       
-      
       // Get trainer signoffs for these completions
       const completionIds = completions?.map(c => c.id) || [];
       let signoffs: any[] = [];
@@ -124,38 +118,28 @@ export default function Supervisor() {
         }
       }
       
-      
       // Combine the data and categorize
       const result = assignments?.map(assignment => {
         const completion = completions?.find(c => c.assignment_id === assignment.id);
         const hasSignoff = signoffs.some(s => s.completion_id === completion?.id);
         const signoff = signoffs.find(s => s.completion_id === completion?.id);
         const module = modules.find(m => m.id === assignment.module_id);
-        const trainee = users.find(u => u.id === assignment.assigned_to);
-        const trainer = users.find(u => u.id === assignment.trainer_user_id);
-        
-        // Determine if this supervisor is the trainer or trainee
-        const isTrainer = assignment.trainer_user_id === userId;
-        const isTrainee = assignment.assigned_to === userId;
+        const user = users.find(u => u.id === assignment.assigned_to);
         
         return {
           id: assignment.id,
-          module_id: assignment.module_id,
           status: assignment.status,
           due_date: assignment.due_date,
           assigned_at: assignment.assigned_at,
           module: module || null,
-          trainee: trainee || null,
-          trainer: trainer || null,
+          user: user || null,
           trainer_user_id: assignment.trainer_user_id,
           completion: completion || null,
           hasSignoff: hasSignoff,
           signoff: signoff || null,
           needsSignoff: !!completion && !hasSignoff,
           isCompleted: !!completion && hasSignoff,
-          isInProgress: !!completion && !hasSignoff,
-          isTrainer: isTrainer,
-          isTrainee: isTrainee
+          isInProgress: !!completion && !hasSignoff
         };
       }) || [];
       
@@ -169,16 +153,11 @@ export default function Supervisor() {
   const inProgress = allAssignments.filter(a => a.isInProgress);
   const completed = allAssignments.filter(a => a.isCompleted);
   const toSign = allAssignments.filter(a => a.needsSignoff);
-  
-  // Separate trainer vs trainee assignments
-  const trainerAssignments = allAssignments.filter(a => a.isTrainer);
-  const traineeAssignments = allAssignments.filter(a => a.isTrainee);
-  
 
   React.useEffect(() => {
     if (!userId) return;
     const channel = supabase
-      .channel(`trainer-dashboard-${userId}`)
+      .channel(`admin-trainer-dashboard-${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'assignments' }, () => refetch())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'completions' }, () => refetch())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'trainer_signoffs' }, () => refetch())
@@ -187,99 +166,6 @@ export default function Supervisor() {
   }, [userId, refetch]);
 
   const [signingOff, setSigningOff] = React.useState(false);
-  const [confirmOpen, setConfirmOpen] = React.useState(false);
-  const [pendingAssignment, setPendingAssignment] = React.useState<any | null>(null);
-
-  const markComplete = async (assignment: any) => {
-    try {
-      const signedName = name;
-      const signedEmail = session?.user?.email || '';
-      const { data: c, error: cErr } = await supabase
-        .from('completions')
-        .insert({ assignment_id: assignment.id })
-        .select('id')
-        .single();
-      if (cErr) throw cErr;
-      const ua = typeof navigator !== 'undefined' ? navigator.userAgent : undefined;
-      const { error: sErr } = await supabase.from('signatures').insert({
-        completion_id: c.id,
-        signer_user_id: userId,
-        signed_name_snapshot: signedName,
-        signed_email_snapshot: signedEmail,
-        user_agent: ua,
-      });
-      if (sErr) throw sErr;
-      // Notify trainer if set
-      try {
-        console.log('Calling trainer_notify_signoff with:', { completion_id: c.id, assignment_id: assignment.id, trainer_user_id: assignment.trainer_user_id });
-        const result = await supabase.functions.invoke('trainer_notify_signoff', { body: { completion_id: c.id, assignment_id: assignment.id } });
-        console.log('Trainer notification result:', result);
-      } catch (e) {
-        console.error('Failed to notify trainer:', e);
-      }
-      await refetch();
-    } catch (error) {
-      console.error('Failed to mark complete:', error);
-      alert(`Failed to mark complete: ${error}`);
-    }
-  };
-
-  const openAssignmentMaterial = async (assignment: any) => {
-    try {
-      console.log('Opening assignment material for:', assignment);
-      console.log('Assignment module_id:', assignment.module_id);
-      console.log('Assignment type:', typeof assignment.module_id);
-      
-      if (!assignment.module_id) {
-        console.error('No module_id found in assignment');
-        alert('Error: No module ID found for this assignment');
-        return;
-      }
-      
-      const { data: module, error: moduleError } = await supabase
-        .from('modules')
-        .select('storage_path, type')
-        .eq('id', assignment.module_id)
-        .single();
-      
-      if (moduleError) {
-        console.error('Error fetching module:', moduleError);
-        alert(`Error fetching module: ${moduleError.message}`);
-        return;
-      }
-      
-      console.log('Module data:', module);
-      
-      if (module?.storage_path) {
-        console.log('Downloading file:', module.storage_path);
-        const { data, error: downloadError } = await supabase.storage
-          .from('training-materials')
-          .download(module.storage_path);
-          
-        if (downloadError) {
-          console.error('Error downloading file:', downloadError);
-          alert(`Error downloading file: ${downloadError.message}`);
-          return;
-        }
-        
-        if (data) {
-          console.log('File downloaded successfully, opening...');
-          const url = URL.createObjectURL(data);
-          window.open(url, '_blank');
-          setTimeout(() => URL.revokeObjectURL(url), 30000);
-        } else {
-          console.error('No data received from download');
-          alert('No data received from download');
-        }
-      } else {
-        console.error('No storage path found for module');
-        alert('No storage path found for this module');
-      }
-    } catch (error) {
-      console.error('Failed to open material:', error);
-      alert(`Failed to open material: ${error}`);
-    }
-  };
 
   const handleSignoff = async () => {
     if (!pendingCompletion || !userId || !signedName) return;
@@ -326,14 +212,18 @@ export default function Supervisor() {
     }
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <Header userType="supervisor" userName={name} onLogout={async () => supabase.auth.signOut()} />
+      <Header userType="admin" userName={name} onLogout={handleLogout} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Supervisor Panel</h2>
-            <p className="text-muted-foreground">View your assigned training modules and manage trainer sign-offs.</p>
+            <h2 className="text-2xl font-bold text-foreground">Manager Sign-Offs</h2>
+            <p className="text-muted-foreground">Manage your trainer sign-offs for assigned training modules.</p>
           </div>
           <Button 
             variant="outline" 
@@ -470,16 +360,9 @@ export default function Supervisor() {
                     <div key={a.id} className="flex items-center justify-between border rounded-lg p-4">
                       <div>
                         <div className="font-semibold">{a.module?.title || 'Module Title Not Available'}</div>
-                        {a.isTrainer && (
-                          <div className="text-xs text-muted-foreground">
-                            Trainee: {a.trainee?.first_name || 'N/A'} {a.trainee?.last_name || ''} • {a.trainee?.email || 'N/A'} ({a.trainee?.role || 'N/A'})
-                          </div>
-                        )}
-                        {a.isTrainee && (
-                          <div className="text-xs text-muted-foreground">
-                            Trainer: {a.trainer?.first_name || 'N/A'} {a.trainer?.last_name || ''} • {a.trainer?.email || 'N/A'} ({a.trainer?.role || 'N/A'})
-                          </div>
-                        )}
+                        <div className="text-xs text-muted-foreground">
+                          Trainee: {a.user?.first_name || 'N/A'} {a.user?.last_name || ''} • {a.user?.email || 'N/A'} ({a.user?.role || 'N/A'})
+                        </div>
                         {hasCompletion && (
                           <div className="text-xs text-muted-foreground">Completed: {a.completion?.completed_at ? new Date(a.completion.completed_at).toLocaleString() : '—'}</div>
                         )}
@@ -489,12 +372,8 @@ export default function Supervisor() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant={badgeVariant}>{statusLabel}</Badge>
-                        <Button variant="outline" onClick={() => openAssignmentMaterial(a)}>Open</Button>
-                        {a.isTrainee && !hasCompletion && (
-                          <Button onClick={() => { setPendingAssignment(a); setConfirmOpen(true); }}>Mark Complete</Button>
-                        )}
-                        {a.isTrainer && activeFilter === 'signoffs' && needsSignoff && (
-                          <Button onClick={() => { setPendingCompletion(a); setSignOpen(true); }}>Trainer Sign-Off</Button>
+                        {activeFilter === 'signoffs' && needsSignoff && (
+                          <Button onClick={() => { setPendingCompletion(a); setSignOpen(true); }}>Manager Sign-Off</Button>
                         )}
                       </div>
                     </div>
@@ -506,36 +385,10 @@ export default function Supervisor() {
           </CardContent>
         </Card>
 
-        <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirm Completion</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Congratulations on completing this training! Do you feel confident to move forward and apply what you've learned?
-              </p>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={async () => {
-                  const a = pendingAssignment;
-                  setConfirmOpen(false);
-                  if (a) await openAssignmentMaterial(a);
-                }}>No, Take Me Back</Button>
-                <Button onClick={async () => {
-                  const a = pendingAssignment;
-                  setConfirmOpen(false);
-                  if (a) await markComplete(a);
-                  setPendingAssignment(null);
-                }}>Yes, Mark Complete</Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
         <Dialog open={signOpen} onOpenChange={setSignOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Confirm Trainer Sign-Off</DialogTitle>
+              <DialogTitle>Confirm Manager Sign-Off</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">Please type your full name as your digital signature to acknowledge training completion.</p>
@@ -553,5 +406,3 @@ export default function Supervisor() {
     </div>
   );
 }
-
-
