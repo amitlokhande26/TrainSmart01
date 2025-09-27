@@ -78,24 +78,25 @@ export function LoginForm({ onLogin }: LoginFormProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Large Brand Banner */}
+      {/* Large Brand Banner */}  
       <div className="w-full bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border-b-2 border-primary/20">
         <div className="w-full">
           {/* Stretched Logo */}
-          <div className="w-full h-56 bg-primary/5 flex items-center justify-center overflow-hidden py-2">
+          <div className="w-full h-[226px] bg-primary/5 flex items-center justify-center overflow-hidden py-2">
             <img 
               src={logo} 
               alt="TrainSmart Logo" 
-              className="w-full h-56 object-cover"
+              className="w-full h-[236px] object-cover"
+              style={{ objectPosition: '0% 41%' }} // 20% from top
             />
           </div>
           
           {/* Brand Name and Description Below Logo */}
-          <div className="w-full h-20 bg-primary/5 flex items-center justify-center overflow-hidden">
+          <div className="w-full h-[70px] bg-primary/5 flex items-center justify-center overflow-hidden">
             <img 
               src="/images/trainsmart-logo.png" 
               alt="TrainSmart™ - Smart Training Management" 
-              className="h-40 w-auto"
+              className="h-[138px] w-auto"
             />
           </div>
         </div>
