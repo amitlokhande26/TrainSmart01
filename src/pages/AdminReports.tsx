@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CheckCircle, Clock, AlertCircle, Users, BookOpen, TrendingUp, Download, FileText, ChevronDown, Calendar as CalendarIcon, RefreshCw } from 'lucide-react';
+import { CheckCircle, Clock, AlertCircle, Users, BookOpen, TrendingUp, Download, FileText, ChevronDown, Calendar as CalendarIcon, RefreshCw, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { exportTrainingReportsExcelFormatted as exportFormattedExcel } from '@/utils/excelFormattedExport';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 // Format training data for Excel export
 const formatTrainingDataForCSV = (data: any[]) => {
@@ -54,6 +55,9 @@ export default function AdminReports() {
   const [isFiltersExpanded, setIsFiltersExpanded] = React.useState<boolean>(false);
   const [fromDateOpen, setFromDateOpen] = React.useState<boolean>(false);
   const [toDateOpen, setToDateOpen] = React.useState<boolean>(false);
+  const [isCompletionsExpanded, setIsCompletionsExpanded] = React.useState<boolean>(false);
+  const [completionsPage, setCompletionsPage] = React.useState<number>(1);
+  const [completionsPerPage] = React.useState<number>(50);
 
   // Helper functions for date handling
   const formatDate = (date: Date | undefined) => {
@@ -336,6 +340,125 @@ export default function AdminReports() {
     };
   }, [employeeLogs]);
 
+  // Pagination logic for completions
+  const paginatedCompletions = React.useMemo(() => {
+    if (!employeeLogs) return [];
+    const startIndex = (completionsPage - 1) * completionsPerPage;
+    const endIndex = startIndex + completionsPerPage;
+    return employeeLogs.slice(startIndex, endIndex);
+  }, [employeeLogs, completionsPage, completionsPerPage]);
+
+  const totalPages = Math.ceil((employeeLogs?.length || 0) / completionsPerPage);
+
+  // Reset page when data changes
+  React.useEffect(() => {
+    setCompletionsPage(1);
+  }, [employeeLogs]);
+
+  // NEW: Monthly trend data for bar chart
+  const monthlyTrendData = React.useMemo(() => {
+    if (!employeeLogs || employeeLogs.length === 0) return [];
+    
+    // Group data by month
+    const monthlyData: { [key: string]: { completions: number; signoffs: number } } = {};
+    
+    employeeLogs.forEach((row: any) => {
+      if (row.completed_at) {
+        const date = new Date(row.completed_at);
+        const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        
+        if (!monthlyData[monthKey]) {
+          monthlyData[monthKey] = { completions: 0, signoffs: 0 };
+        }
+        
+        monthlyData[monthKey].completions += 1;
+        
+        if (row.has_trainer_signoff) {
+          monthlyData[monthKey].signoffs += 1;
+        }
+      }
+    });
+    
+    // If no date filters are applied, show only current month and 4 months before
+    if (!fromDate && !toDate) {
+      const currentDate = new Date();
+      const monthsToShow = [];
+      
+      // Generate current month and 4 months before
+      for (let i = 0; i < 5; i++) {
+        const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+        const monthKey = targetDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        monthsToShow.push(monthKey);
+      }
+      
+      // Filter to only show the last 5 months
+      const filteredData = monthsToShow.map(month => ({
+        month,
+        completions: monthlyData[month]?.completions || 0,
+        signoffs: monthlyData[month]?.signoffs || 0
+      }));
+      
+      // Return in chronological order (oldest to newest)
+      return filteredData.reverse();
+    }
+    
+    // If date filters are applied, show all data within the filtered range
+    return Object.entries(monthlyData)
+      .map(([month, data]) => ({ month, ...data }))
+      .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
+  }, [employeeLogs, fromDate, toDate]);
+
+  // NEW: Employee coverage data for pie chart
+  const employeeCoverageData = React.useMemo(() => {
+    if (!employeeLogs || employeeLogs.length === 0) return [];
+    
+    // Get unique employees and their compliance status
+    const employeeMap = new Map();
+    
+    employeeLogs.forEach((row: any) => {
+      const employeeId = row.employee_email; // Use email as unique identifier
+      
+      if (!employeeMap.has(employeeId)) {
+        employeeMap.set(employeeId, {
+          name: row.employee,
+          email: row.employee_email,
+          hasCompletions: false,
+          hasSignoffs: false
+        });
+      }
+      
+      const employee = employeeMap.get(employeeId);
+      employee.hasCompletions = true;
+      
+      if (row.has_trainer_signoff) {
+        employee.hasSignoffs = true;
+      }
+    });
+    
+    // Calculate compliance percentages
+    const employees = Array.from(employeeMap.values());
+    const totalEmployees = employees.length;
+    
+    const fullyCompliant = employees.filter(emp => emp.hasCompletions && emp.hasSignoffs).length;
+    const inProgress = employees.filter(emp => emp.hasCompletions && !emp.hasSignoffs).length;
+    const notStarted = employees.filter(emp => !emp.hasCompletions).length;
+    
+    return [
+      { name: "Fully Compliant", value: fullyCompliant, percentage: Math.round((fullyCompliant / totalEmployees) * 100) },
+      { name: "In-Progress", value: inProgress, percentage: Math.round((inProgress / totalEmployees) * 100) },
+      { name: "Not Started", value: notStarted, percentage: Math.round((notStarted / totalEmployees) * 100) }
+    ];
+  }, [employeeLogs]);
+
+  // NEW: Chart colors using app's brand colors
+  const chartColors = {
+    completions: 'hsl(217 91% 60%)', // Secondary blue
+    signoffs: 'hsl(142 76% 36%)',    // Success green
+    fullyCompliant: 'hsl(142 76% 36%)', // Success green
+    inProgress: 'hsl(35 91% 62%)',      // Warning orange
+    notStarted: 'hsl(0 84% 60%)'        // Destructive red
+  };
+
 
   const handleExportExcel = async () => {
     if (!employeeLogs || employeeLogs.length === 0) {
@@ -484,55 +607,118 @@ export default function AdminReports() {
           
         </div>
 
-        {/* Summary Cards */}
+        {/* Enhanced KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
-          <Card>
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-lg transition-all duration-300 border-0 shadow-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Completions</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-semibold text-gray-600">Total Completions</CardTitle>
+              <CheckCircle className="h-5 w-5 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{summaryStats.totalCompletions}</div>
+              <div className="text-2xl font-bold text-blue-800">{summaryStats.totalCompletions}</div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 hover:shadow-lg transition-all duration-300 border-0 shadow-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">With Trainer Sign-off</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
+              <CardTitle className="text-sm font-semibold text-gray-600">With Sign-offs</CardTitle>
+              <CheckCircle className="h-5 w-5 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{summaryStats.withTrainerSignoff}</div>
+              <div className="text-2xl font-bold text-green-800">{summaryStats.withTrainerSignoff}</div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 hover:shadow-lg transition-all duration-300 border-0 shadow-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Sign-off</CardTitle>
-              <Clock className="h-4 w-4 text-yellow-600" />
+              <CardTitle className="text-sm font-semibold text-gray-600">Pending Sign-offs</CardTitle>
+              <Clock className="h-5 w-5 text-orange-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{summaryStats.pendingTrainerSignoff}</div>
+              <div className="text-2xl font-bold text-orange-800">{summaryStats.pendingTrainerSignoff}</div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 hover:shadow-lg transition-all duration-300 border-0 shadow-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Unique Employees</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-semibold text-gray-600">Unique Employees</CardTitle>
+              <Users className="h-5 w-5 text-purple-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{summaryStats.uniqueEmployees}</div>
+              <div className="text-2xl font-bold text-purple-800">{summaryStats.uniqueEmployees}</div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-br from-pink-50 to-pink-100 hover:shadow-lg transition-all duration-300 border-0 shadow-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Unique Modules</CardTitle>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-semibold text-gray-600">Unique Modules</CardTitle>
+              <BookOpen className="h-5 w-5 text-pink-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{summaryStats.uniqueModules}</div>
+              <div className="text-2xl font-bold text-pink-800">{summaryStats.uniqueModules}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Chart Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Completion vs Sign-off Trends */}
+          <Card className="shadow-md border-0">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-blue-600" />
+                Completion vs Sign-off Trends
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthlyTrendData}>
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="completions" fill={chartColors.completions} name="Completions" />
+                    <Bar dataKey="signoffs" fill={chartColors.signoffs} name="Sign-offs" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Employee Coverage */}
+          <Card className="shadow-md border-0">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Users className="h-5 w-5 text-green-600" />
+                Employee Coverage
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={employeeCoverageData}
+                      dataKey="value"
+                      nameKey="name"
+                      outerRadius={70}
+                      label={({ name, percentage }) => `${name}: ${percentage}%`}
+                    >
+                      {employeeCoverageData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={
+                            entry.name === "Fully Compliant" ? chartColors.fullyCompliant :
+                            entry.name === "In-Progress" ? chartColors.inProgress :
+                            chartColors.notStarted
+                          } 
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -923,57 +1109,167 @@ export default function AdminReports() {
 
         {/* Reports Table */}
         <Card>
-          <CardHeader>
-            <CardTitle>Training Completions ({employeeLogs?.length || 0} records)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Employee</TableHead>
-                    <TableHead>Module</TableHead>
-                    <TableHead>Line</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Completed</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(employeeLogs || []).map((row: any) => (
-                    <TableRow key={row.completion_id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{row.employee}</div>
-                          <div className="text-sm text-gray-500">{row.employee_email}</div>
+          <CardHeader 
+            className="pb-4 cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => setIsCompletionsExpanded(!isCompletionsExpanded)}
+          >
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-blue-600" />
+                Training Completions
+                <Badge variant="secondary" className="ml-2">
+                  {employeeLogs?.length || 0} records
+                </Badge>
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                {employeeLogs && employeeLogs.length > completionsPerPage && (
+                  <div className="text-sm text-gray-500">
+                    Page {completionsPage} of {totalPages}
+                  </div>
+                )}
+                <div className="flex items-center gap-1 text-sm text-gray-500">
+                  {isCompletionsExpanded ? 'Collapse' : 'Expand'}
+                  {isCompletionsExpanded ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </div>
               </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{row.module_title}</div>
-                          <div className="text-sm text-gray-500">v{row.module_version}</div>
-              </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{row.line_name}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{row.category_name}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {row.completed_at ? new Date(row.completed_at).toLocaleDateString() : 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={row.has_trainer_signoff ? 'default' : 'secondary'}>
-                          {row.has_trainer_signoff ? 'Approved' : 'Pending'}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
             </div>
-          </CardContent>
+          </CardHeader>
+          {isCompletionsExpanded && (
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Employee</TableHead>
+                      <TableHead>Module</TableHead>
+                      <TableHead>Line</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Completed</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedCompletions.map((row: any) => (
+                      <TableRow key={row.completion_id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{row.employee}</div>
+                            <div className="text-sm text-gray-500">{row.employee_email}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{row.module_title}</div>
+                            <div className="text-sm text-gray-500">v{row.module_version}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{row.line_name}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{row.category_name}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {row.completed_at ? new Date(row.completed_at).toLocaleDateString() : 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={row.has_trainer_signoff ? 'default' : 'secondary'}>
+                            {row.has_trainer_signoff ? 'Approved' : 'Pending'}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              
+              {/* Pagination Controls */}
+              {employeeLogs && employeeLogs.length > completionsPerPage && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+                  <div className="text-sm text-gray-500">
+                    Showing {((completionsPage - 1) * completionsPerPage) + 1} to {Math.min(completionsPage * completionsPerPage, employeeLogs.length)} of {employeeLogs.length} entries
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setCompletionsPage(1);
+                      }}
+                      disabled={completionsPage === 1}
+                    >
+                      First
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setCompletionsPage(prev => Math.max(1, prev - 1));
+                      }}
+                      disabled={completionsPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        const pageNum = Math.max(1, Math.min(totalPages - 4, completionsPage - 2)) + i;
+                        if (pageNum > totalPages) return null;
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={pageNum === completionsPage ? "default" : "outline"}
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setCompletionsPage(pageNum);
+                            }}
+                            className="w-8 h-8 p-0"
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setCompletionsPage(prev => Math.min(totalPages, prev + 1));
+                      }}
+                      disabled={completionsPage === totalPages}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setCompletionsPage(totalPages);
+                      }}
+                      disabled={completionsPage === totalPages}
+                    >
+                      Last
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          )}
         </Card>
       </div>
     </div>

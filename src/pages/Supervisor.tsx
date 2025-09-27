@@ -347,60 +347,115 @@ export default function Supervisor() {
           </Button>
         </div>
 
+
         {/* Status Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
+          {/* Assigned Card */}
           <Card 
-            className={`cursor-pointer hover:bg-muted/50 transition-colors ${activeFilter === 'assigned' ? 'ring-2 ring-primary' : ''}`}
+            className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
+              activeFilter === 'assigned' 
+                ? 'bg-gradient-to-r from-blue-100 to-blue-200 ring-2 ring-blue-500' 
+                : 'bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200'
+            }`}
             onClick={() => setActiveFilter('assigned')}
           >
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Assigned</span>
-                <span className="text-2xl font-bold">{assigned.length}</span>
+            <CardContent className="flex items-center justify-between p-6">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-600">Assigned</h2>
+                <p className="text-3xl font-bold text-blue-800">{assigned.length}</p>
+              </div>
+              <div className="bg-blue-200 p-3 rounded-full">
+                <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
               </div>
             </CardContent>
           </Card>
+
+          {/* In Progress Card */}
           <Card 
-            className={`cursor-pointer hover:bg-muted/50 transition-colors ${activeFilter === 'inprogress' ? 'ring-2 ring-primary' : ''}`}
+            className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
+              activeFilter === 'inprogress' 
+                ? 'bg-gradient-to-r from-orange-100 to-orange-200 ring-2 ring-orange-500' 
+                : 'bg-gradient-to-r from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200'
+            }`}
             onClick={() => setActiveFilter('inprogress')}
           >
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">In Progress</span>
-                <span className="text-2xl font-bold">{inProgress.length}</span>
+            <CardContent className="flex items-center justify-between p-6">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-600">In Progress</h2>
+                <p className="text-3xl font-bold text-orange-800">{inProgress.length}</p>
+              </div>
+              <div className="bg-orange-200 p-3 rounded-full">
+                <svg className="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
             </CardContent>
           </Card>
+
+          {/* Completed Card */}
           <Card 
-            className={`cursor-pointer hover:bg-muted/50 transition-colors ${activeFilter === 'completed' ? 'ring-2 ring-primary' : ''}`}
+            className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
+              activeFilter === 'completed' 
+                ? 'bg-gradient-to-r from-green-100 to-green-200 ring-2 ring-green-500' 
+                : 'bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200'
+            }`}
             onClick={() => setActiveFilter('completed')}
           >
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Completed</span>
-                <span className="text-2xl font-bold">{completed.length}</span>
+            <CardContent className="flex items-center justify-between p-6">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-600">Completed</h2>
+                <p className="text-3xl font-bold text-green-800">{completed.length}</p>
+              </div>
+              <div className="bg-green-200 p-3 rounded-full">
+                <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
             </CardContent>
           </Card>
+
+          {/* Sign Offs Card */}
           <Card 
-            className={`cursor-pointer hover:bg-muted/50 transition-colors ${activeFilter === 'signoffs' ? 'ring-2 ring-primary' : ''}`}
+            className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
+              activeFilter === 'signoffs' 
+                ? 'bg-gradient-to-r from-purple-100 to-purple-200 ring-2 ring-purple-500' 
+                : 'bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200'
+            }`}
             onClick={() => setActiveFilter('signoffs')}
           >
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Sign Offs</span>
-                <span className="text-2xl font-bold">{toSign.length}</span>
+            <CardContent className="flex items-center justify-between p-6">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-600">Sign Offs</h2>
+                <p className="text-3xl font-bold text-purple-800">{toSign.length}</p>
+              </div>
+              <div className="bg-purple-200 p-3 rounded-full">
+                <svg className="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
               </div>
             </CardContent>
           </Card>
+
+          {/* All Card */}
           <Card 
-            className={`cursor-pointer hover:bg-muted/50 transition-colors ${activeFilter === 'all' ? 'ring-2 ring-primary' : ''}`}
+            className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
+              activeFilter === 'all' 
+                ? 'bg-gradient-to-r from-gray-100 to-gray-200 ring-2 ring-gray-500' 
+                : 'bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200'
+            }`}
             onClick={() => setActiveFilter('all')}
           >
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">All</span>
-                <span className="text-2xl font-bold">{allAssignments.length}</span>
+            <CardContent className="flex items-center justify-between p-6">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-600">All</h2>
+                <p className="text-3xl font-bold text-gray-800">{allAssignments.length}</p>
+              </div>
+              <div className="bg-gray-200 p-3 rounded-full">
+                <svg className="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
               </div>
             </CardContent>
           </Card>

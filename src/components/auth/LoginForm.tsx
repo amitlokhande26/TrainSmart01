@@ -92,7 +92,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
           </div>
           
           {/* Brand Name and Description Below Logo */}
-          <div className="w-full h-[140px] bg-primary/5 flex items-center justify-center overflow-hidden">
+          <div className="w-full h-[70px] bg-primary/5 flex items-center justify-center overflow-hidden">
             <img 
               src="/images/trainsmart-logo.png" 
               alt="TrainSmart™ - Smart Training Management" 

@@ -217,10 +217,11 @@ export default function AdminSignOffs() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-y-scroll">
       <Header userType="admin" userName={name} onLogout={handleLogout} />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        <div className="flex items-center justify-between">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-foreground">Manager Sign-Offs</h2>
             <p className="text-muted-foreground">Manage your trainer sign-offs for assigned training modules.</p>
@@ -235,9 +236,9 @@ export default function AdminSignOffs() {
           >
             Refresh
           </Button>
-        </div>
+          </div>
 
-        {/* Status Cards */}
+          {/* Status Cards */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           <Card 
             className={`cursor-pointer hover:bg-muted/50 transition-colors ${activeFilter === 'assigned' ? 'ring-2 ring-primary' : ''}`}
@@ -296,7 +297,7 @@ export default function AdminSignOffs() {
           </Card>
         </div>
 
-        {/* Filtered Training Modules */}
+          {/* Filtered Training Modules */}
         <Card>
           <CardHeader>
             <CardTitle>
@@ -385,7 +386,7 @@ export default function AdminSignOffs() {
           </CardContent>
         </Card>
 
-        <Dialog open={signOpen} onOpenChange={setSignOpen}>
+          <Dialog open={signOpen} onOpenChange={setSignOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Confirm Manager Sign-Off</DialogTitle>
@@ -401,7 +402,8 @@ export default function AdminSignOffs() {
               </div>
             </div>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </main>
     </div>
   );

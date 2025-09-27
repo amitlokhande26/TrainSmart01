@@ -8,13 +8,15 @@ import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Employee from "@/pages/Employee";
 import Admin from "@/pages/Admin";
-import AdminLibrary from "./pages/AdminLibrary";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminAssignments from "./pages/AdminAssignments";
-import AdminUsers from "./pages/AdminUsers";
-import AdminReports from "./pages/AdminReports";
-import AdminEmployeeDetail from "./pages/AdminEmployeeDetail";
-import AdminSignOffs from "./pages/AdminSignOffs";
+import { lazy, Suspense } from "react";
+
+const AdminLibrary = lazy(() => import("./pages/AdminLibrary"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminAssignments = lazy(() => import("./pages/AdminAssignments"));
+const AdminUsers = lazy(() => import("./pages/AdminUsers"));
+const AdminReports = lazy(() => import("./pages/AdminReports"));
+const AdminEmployeeDetail = lazy(() => import("./pages/AdminEmployeeDetail"));
+const AdminSignOffs = lazy(() => import("./pages/AdminSignOffs"));
 import Supervisor from "./pages/Supervisor";
 
 const queryClient = new QueryClient();
@@ -34,13 +36,41 @@ const App = () => (
             <Route path="/supervisor" element={<Supervisor />} />
           </Route>
           <Route element={<ProtectedRoute allowed={["admin"]} />}>
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/library" element={<AdminLibrary />} />
-            <Route path="/admin/assignments" element={<AdminAssignments />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
-            <Route path="/admin/users/:id" element={<AdminEmployeeDetail />} />
-            <Route path="/admin/reports" element={<AdminReports />} />
-            <Route path="/admin/signoffs" element={<AdminSignOffs />} />
+            <Route path="/admin" element={
+              <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+                <AdminDashboard />
+              </Suspense>
+            } />
+            <Route path="/admin/library" element={
+              <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+                <AdminLibrary />
+              </Suspense>
+            } />
+            <Route path="/admin/assignments" element={
+              <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+                <AdminAssignments />
+              </Suspense>
+            } />
+            <Route path="/admin/users" element={
+              <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+                <AdminUsers />
+              </Suspense>
+            } />
+            <Route path="/admin/users/:id" element={
+              <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+                <AdminEmployeeDetail />
+              </Suspense>
+            } />
+            <Route path="/admin/reports" element={
+              <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+                <AdminReports />
+              </Suspense>
+            } />
+            <Route path="/admin/signoffs" element={
+              <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+                <AdminSignOffs />
+              </Suspense>
+            } />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
