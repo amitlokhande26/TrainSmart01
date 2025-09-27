@@ -78,21 +78,17 @@ export function TrainSmartApp() {
             <img 
               src={logo} 
               alt="TrainSmart Logo" 
-              className="w-full h-full object-cover"
+              className="w-full h-56 bg-primary/5 flex items-center justify-center overflow-hidden py-2"
             />
           </div>
           
           {/* Brand Name and Description Below Logo */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col items-center justify-center text-center">
-              <div className="flex items-center">
-                <span className="text-4xl font-bold text-primary">Train</span>
-                <span className="text-4xl font-bold text-accent">Smart</span>
-              </div>
-              <div className="text-base font-medium text-muted-foreground">
-                Professional Training Management System
-              </div>
-            </div>
+          <div className="w-full flex justify-center">
+            <img 
+              src="/images/trainsmart-logo.png" 
+              alt="TrainSmart™ - Smart Training Management" 
+              className="h-40 w-auto"
+            />
           </div>
         </div>
       </div>

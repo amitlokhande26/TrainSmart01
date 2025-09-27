@@ -82,34 +82,38 @@ export function LoginForm({ onLogin }: LoginFormProps) {
       <div className="w-full bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border-b-2 border-primary/20">
         <div className="w-full">
           {/* Stretched Logo */}
-          <div className="w-full h-56 bg-primary/5 flex items-center justify-center overflow-hidden">
+          <div className="w-full h-56 bg-primary/5 flex items-center justify-center overflow-hidden py-2">
             <img 
               src={logo} 
               alt="TrainSmart Logo" 
-              className="w-full h-full object-cover"
+              className="w-full h-56 object-cover"
             />
           </div>
           
           {/* Brand Name and Description Below Logo */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col items-center justify-center text-center">
-              <div className="flex items-center">
-                <span className="text-4xl font-bold text-primary">Train</span>
-                <span className="text-4xl font-bold text-accent">Smart™</span>
-              </div>
-              <div className="text-base font-medium text-muted-foreground">
-                Professional Training Management System
-              </div>
-            </div>
+          <div className="w-full h-20 bg-primary/5 flex items-center justify-center overflow-hidden">
+            <img 
+              src="/images/trainsmart-logo.png" 
+              alt="TrainSmart™ - Smart Training Management" 
+              className="h-40 w-auto"
+            />
           </div>
         </div>
       </div>
       
-      <div className="flex items-center justify-center p-4 min-h-[calc(100vh-200px)]">
+      <div className="flex items-center justify-center p-4 min-h-[calc(100vh-200px)] bg-gradient-to-br from-background via-background to-muted/20">
         <div className="w-full max-w-md">
-          <Card className="shadow-brand">
-            <CardHeader>
-              <CardTitle className="text-center text-2xl">Sign In</CardTitle>
+          <Card className="shadow-2xl border-0 bg-card/95 backdrop-blur-sm">
+            <CardHeader className="space-y-2 pb-6">
+              <div className="flex justify-center mb-2">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+              </div>
+              <CardTitle className="text-center text-2xl font-semibold">Welcome Back</CardTitle>
+              <p className="text-center text-sm text-muted-foreground">Sign in to your account to continue</p>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -120,9 +124,9 @@ export function LoginForm({ onLogin }: LoginFormProps) {
                   </Alert>
                 )}
                 
-                <form onSubmit={handleLogin} className="space-y-4">
+                <form onSubmit={handleLogin} className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email" className="text-sm font-medium">Email Address</Label>
                     <Input
                       id="email"
                       type="email"
@@ -131,32 +135,46 @@ export function LoginForm({ onLogin }: LoginFormProps) {
                       onChange={(e) => setForm(prev => ({ ...prev, email: e.target.value }))}
                       required
                       disabled={loading}
+                      className="h-11 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="password" className="text-sm font-medium">Password</Label>
                     <Input
                       id="password"
                       type="password"
-                      placeholder="••••••••"
+                      placeholder="Enter your password"
                       value={form.password}
                       onChange={(e) => setForm(prev => ({ ...prev, password: e.target.value }))}
                       required
                       disabled={loading}
+                      className="h-11 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
                   <Button 
                     type="submit" 
-                    className="w-full" 
+                    className="w-full h-11 text-base font-medium transition-all duration-200 hover:shadow-lg" 
                     size="lg"
                     disabled={loading}
                   >
-                    {loading ? 'Signing in...' : 'Sign In'}
+                    {loading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        Signing in...
+                      </div>
+                    ) : (
+                      'Sign In'
+                    )}
                   </Button>
                 </form>
                 
-                <div className="text-center text-sm text-muted-foreground mt-4">
-                  <p>Don't have an account? Contact your manager to create your employee login.</p>
+                <div className="text-center text-sm text-muted-foreground mt-6 pt-4 border-t border-border/50">
+                  <p className="flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Don't have an account? Contact your manager to create your employee login.
+                  </p>
                 </div>
               </div>
             </CardContent>
