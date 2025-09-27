@@ -50,20 +50,32 @@ export function Header({ userType, userName, onLogout }: HeaderProps) {
       
       {/* Navigation Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* TrainSmart Brand */}
-          <div className="flex items-center">
-            <span className="text-3xl font-bold text-primary">Train</span>
-            <span className="text-3xl font-bold text-accent">Smart™</span>
-          </div>
-          {/* Admin Nav */}
-          {userType === 'admin' && (
-            <div className="hidden md:flex items-center">
-              <AdminTabStyle />
+        <div className="flex justify-between items-center h-16 -ml-20">
+          {/* Left side: Logo and Tabs */}
+          <div className="flex items-center gap-8">
+            {/* TrainSmart Brand */}
+            <div className="flex items-center">
+              <img 
+                src="/images/trainsmart-header-logo.png" 
+                alt="TrainSmart™" 
+                className="h-[160px] w-auto object-cover object-left"
+                onError={(e) => {
+                  console.error('Header logo failed to load. Using fallback text...');
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.parentElement!.innerHTML = '<span class="text-3xl font-bold text-primary">Train</span><span class="text-3xl font-bold text-accent">Smart™</span>';
+                  
+                }}
+              />
             </div>
-          )}
+            {/* Admin Nav */}
+            {userType === 'admin' && (
+              <div className="hidden md:flex items-center">
+                <AdminTabStyle />
+              </div>
+            )}
+          </div>
 
-          {/* User Info and Actions */}
+          {/* Right side: User Info and Actions */}
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <User className="h-4 w-4" />

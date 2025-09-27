@@ -89,6 +89,10 @@ export function TrainSmartApp() {
               src="/images/trainsmart-logo.png" 
               alt="TrainSmart™ - Smart Training Management" 
               className="h-[75px] w-auto"
+              onError={(e) => {
+                console.error('Main logo failed to load. Using fallback...');
+                e.currentTarget.src = '/images/trainsmart-logo.png';
+              }}
             />
           </div>
         </div>

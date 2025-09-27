@@ -87,16 +87,20 @@ export function LoginForm({ onLogin }: LoginFormProps) {
               src={logo} 
               alt="TrainSmart Logo" 
               className="w-full h-[236px] object-cover"
-              style={{ objectPosition: '0% 41%' }} // 20% from top
+              style={{ objectPosition: '0% 41%' }}
             />
           </div>
           
           {/* Brand Name and Description Below Logo */}
-          <div className="w-full h-[70px] bg-primary/5 flex items-center justify-center overflow-hidden">
+          <div className="w-full h-[140px] bg-primary/5 flex items-center justify-center overflow-hidden">
             <img 
               src="/images/trainsmart-logo.png" 
               alt="TrainSmart™ - Smart Training Management" 
               className="h-[138px] w-auto"
+              onError={(e) => {
+                console.error('Main logo failed to load. Using fallback...');
+                e.currentTarget.src = '/images/trainsmart-logo.png';
+              }}
             />
           </div>
         </div>
