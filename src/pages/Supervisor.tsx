@@ -178,9 +178,9 @@ export default function Supervisor() {
     enabled: !!userId,
   });
 
-  // Categorize assignments
-  const assigned = allAssignments.filter(a => !a.completion);
-  const inProgress = allAssignments.filter(a => a.isInProgress);
+  // Categorize assignments based on status and completion
+  const assigned = allAssignments.filter(a => a.status === 'assigned');
+  const inProgress = allAssignments.filter(a => a.status === 'in_progress' && !a.isCompleted);
   const completed = allAssignments.filter(a => a.isCompleted);
   const toSign = allAssignments.filter(a => a.needsSignoff);
   
@@ -248,6 +248,27 @@ export default function Supervisor() {
         console.error('No module_id found in assignment');
         alert('Error: No module ID found for this assignment');
         return;
+      }
+
+      // Update assignment status to 'in_progress' if it's currently 'assigned'
+      if (assignment.status === 'assigned') {
+        console.log('Updating assignment status to in_progress');
+        const { error: updateError } = await supabase
+          .from('assignments')
+          .update({ 
+            status: 'in_progress',
+            started_at: new Date().toISOString()
+          })
+          .eq('id', assignment.id);
+        
+        if (updateError) {
+          console.error('Error updating assignment status:', updateError);
+          // Continue with opening the material even if status update fails
+        } else {
+          console.log('Assignment status updated to in_progress');
+          // Refetch data to update the UI
+          await refetch();
+        }
       }
       
       const { data: module, error: moduleError } = await supabase
@@ -519,7 +540,6 @@ export default function Supervisor() {
                   const hasSignoff = Boolean(a?.signoff?.id);
                   const needsSignoff = hasCompletion && !hasSignoff;
                   const isCompleted = hasCompletion && hasSignoff;
-                  const isInProgress = hasCompletion && !hasSignoff;
                   
                   let statusLabel = 'Not Started';
                   let badgeVariant: "default" | "destructive" | "outline" | "secondary" = 'outline';
@@ -530,9 +550,12 @@ export default function Supervisor() {
                   } else if (needsSignoff) {
                     statusLabel = 'Awaiting Sign-Off';
                     badgeVariant = 'secondary';
-                  } else if (hasCompletion) {
-                    statusLabel = 'Completed';
-                    badgeVariant = 'default';
+                  } else if (a.status === 'in_progress') {
+                    statusLabel = 'In Progress';
+                    badgeVariant = 'secondary';
+                  } else if (a.status === 'assigned') {
+                    statusLabel = 'Not Started';
+                    badgeVariant = 'outline';
                   }
                   
                   return (
