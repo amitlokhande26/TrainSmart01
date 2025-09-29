@@ -23,13 +23,14 @@ export function AdminTabStyle({ className }: AdminTabStyleProps) {
     { path: '/admin/assignments', label: 'Assignments' },
     { path: '/admin/users', label: 'Users' },
     { path: '/admin/signoffs', label: 'Sign Offs' },
+    { path: '/admin/mytraining', label: 'My Training' },
     { path: '/admin/reports', label: 'Reports' },
   ];
 
   return (
     <div className={cn("relative inline-flex items-center gap-2 p-1 rounded-lg bg-gray-100 shadow-sm", className)}>
       {/* Tab links */}
-      <nav className="relative flex gap-1 p-1 whitespace-nowrap">
+      <nav className="relative flex gap-2 p-1 whitespace-nowrap">
         {tabs.map((tab) => {
           const active = isActive(tab.path);
           return (

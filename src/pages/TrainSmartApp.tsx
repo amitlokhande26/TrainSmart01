@@ -17,14 +17,32 @@ export function TrainSmartApp() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const deriveUserFromSession = (session: any | null) => {
+    const deriveUserFromSession = async (session: any | null) => {
       if (!session?.user) {
         setUser({ type: null, name: '' });
         return;
       }
       const role: string | undefined = (session.user.app_metadata as any)?.role || (session.user.user_metadata as any)?.role;
       const email = session.user.email || '';
-      const displayName = (session.user.user_metadata as any)?.full_name || email || 'User';
+      // Try to get first_name and last_name from the users table
+      let displayName = 'User';
+      try {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('first_name, last_name')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (userData && userData.first_name && userData.last_name) {
+          displayName = `${userData.first_name} ${userData.last_name}`;
+        } else {
+          // Fallback to user metadata or email
+          displayName = (session.user.user_metadata as any)?.full_name || email || 'User';
+        }
+      } catch (error) {
+        // Fallback to user metadata or email
+        displayName = (session.user.user_metadata as any)?.full_name || email || 'User';
+      }
       const mappedRole: UserType = role === 'admin' || role === 'manager' ? 'admin' : role === 'supervisor' ? 'supervisor' : 'employee';
       setUser({ type: mappedRole, name: displayName });
     };

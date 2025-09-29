@@ -17,6 +17,7 @@ const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const AdminReports = lazy(() => import("./pages/AdminReports"));
 const AdminEmployeeDetail = lazy(() => import("./pages/AdminEmployeeDetail"));
 const AdminSignOffs = lazy(() => import("./pages/AdminSignOffs"));
+const AdminMyTraining = lazy(() => import("./pages/AdminMyTraining"));
 import Supervisor from "./pages/Supervisor";
 
 const queryClient = new QueryClient();
@@ -69,6 +70,11 @@ const App = () => (
             <Route path="/admin/signoffs" element={
               <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
                 <AdminSignOffs />
+              </Suspense>
+            } />
+            <Route path="/admin/mytraining" element={
+              <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+                <AdminMyTraining />
               </Suspense>
             } />
           </Route>

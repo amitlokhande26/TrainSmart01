@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Settings } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
 import companyBanner from '@/assets/idl-banner.png.png';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
@@ -69,7 +69,7 @@ export function Header({ userType, userName, onLogout }: HeaderProps) {
             </div>
             {/* Admin Nav */}
             {userType === 'admin' && (
-              <div className="hidden md:flex items-center">
+              <div className="hidden md:flex items-center mr-5">
                 <AdminTabStyle />
               </div>
             )}
@@ -79,17 +79,12 @@ export function Header({ userType, userName, onLogout }: HeaderProps) {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <User className="h-4 w-4" />
-              <span>{userName}</span>
+              <span className="font-bold">{userName}</span>
               <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
                 {userType === 'admin' ? 'Manager' : userType === 'supervisor' ? 'Supervisor' : 'Employee'}
               </span>
             </div>
             
-            {userType === 'admin' && (
-              <Button variant="ghost" size="sm">
-                <Settings className="h-4 w-4" />
-              </Button>
-            )}
             
             <Button variant="outline" size="sm" onClick={onLogout}>
               <LogOut className="h-4 w-4" />

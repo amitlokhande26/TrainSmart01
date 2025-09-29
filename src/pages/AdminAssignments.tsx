@@ -11,10 +11,24 @@ export default function AdminAssignments() {
   const [name, setName] = React.useState<string>('Admin');
 
   React.useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       const u = data.user;
-      const display = (u?.user_metadata as any)?.full_name || u?.email || 'Admin';
-      setName(display);
+      if (u) {
+        // Try to get first_name and last_name from the users table
+        const { data: userData } = await supabase
+          .from('users')
+          .select('first_name, last_name')
+          .eq('id', u.id)
+          .single();
+        
+        if (userData && userData.first_name && userData.last_name) {
+          setName(`${userData.first_name} ${userData.last_name}`);
+        } else {
+          // Fallback to user metadata or email
+          const display = (u?.user_metadata as any)?.full_name || u?.email || 'Admin';
+          setName(display);
+        }
+      }
     });
   }, []);
 
@@ -36,6 +50,11 @@ export default function AdminAssignments() {
   const [assigning, setAssigning] = React.useState(false);
   const [message, setMessage] = React.useState<string | null>(null);
 
+  // Reset trainer when employee changes
+  React.useEffect(() => {
+    setTrainerId(null);
+  }, [employeeId]);
+
   const { data: modules } = useQuery({
     queryKey: ['modules-for-assign', selectedLine],
     queryFn: async () => {
@@ -48,18 +67,42 @@ export default function AdminAssignments() {
 
   const { data: employees } = useQuery({
     queryKey: ['employees'],
-    queryFn: async () => (await supabase.from('users').select('id,first_name,last_name,email,role').in('role',['employee','supervisor']).order('first_name')).data || []
+    queryFn: async () => (await supabase.from('users').select('id,first_name,last_name,email,role').in('role',['employee','supervisor','manager','admin']).order('first_name')).data || []
   });
 
   const { data: trainers } = useQuery({
-    queryKey: ['trainers', selectedUserRole],
+    queryKey: ['trainers', selectedUserRole, employeeId],
     queryFn: async () => {
-      // If selected user is supervisor, only show managers as trainers
-      // If selected user is employee, show both supervisors and managers
-      const roles = selectedUserRole === 'supervisor' ? ['manager'] : ['supervisor', 'manager'];
-      return (await supabase.from('users').select('id,first_name,last_name,email,role').in('role', roles).order('first_name')).data || []
+      // Get current logged-in user
+      const { data: { user } } = await supabase.auth.getUser();
+      const currentUserId = user?.id;
+      
+      console.log('Debug - employeeId:', employeeId, 'currentUserId:', currentUserId, 'selectedUserRole:', selectedUserRole);
+      
+      // If selected user is supervisor, only show managers and admins as trainers
+      // If selected user is employee, show supervisors, managers, and admins
+      // If selected user is manager, show managers and admins
+      // If selected user is admin, show managers and admins
+      const roles = selectedUserRole === 'supervisor' ? ['manager', 'admin'] : 
+                   selectedUserRole === 'manager' ? ['manager', 'admin'] : 
+                   selectedUserRole === 'admin' ? ['manager', 'admin'] :
+                   ['supervisor', 'manager', 'admin'];
+      
+      const allTrainers = await supabase.from('users').select('id,first_name,last_name,email,role').in('role', roles).order('first_name');
+      
+      if (allTrainers.data) {
+        console.log('All trainers before filtering:', allTrainers.data.map(t => ({ id: t.id, name: t.first_name, email: t.email })));
+        
+        // Always exclude the selected trainee from trainer list to prevent self-assignment
+        const filtered = allTrainers.data.filter(trainer => trainer.id !== employeeId);
+        console.log('Filtered trainers (excluding selected trainee):', filtered.map(t => ({ id: t.id, name: t.first_name, email: t.email })));
+        console.log('Excluded trainee ID:', employeeId);
+        return filtered;
+      }
+      
+      return [];
     },
-    enabled: !!selectedUserRole
+    enabled: !!selectedUserRole && !!employeeId
   });
 
   const assignModule = async () => {
@@ -69,6 +112,14 @@ export default function AdminAssignments() {
     try {
       const { data: me } = await supabase.auth.getUser();
       const assignedBy = me.user?.id as string;
+      
+      // Prevent self-assignment as both trainee and trainer
+      if (employeeId === assignedBy && trainerId === assignedBy) {
+        setMessage('Error: You cannot assign yourself as both trainee and trainer in the same assignment.');
+        setAssigning(false);
+        return;
+      }
+      
       const payload: any = { module_id: moduleId, assigned_to: employeeId, assigned_by: assignedBy };
       if (dueDate) payload.due_date = dueDate;
       if (trainerId) payload.trainer_user_id = trainerId;
@@ -88,7 +139,7 @@ export default function AdminAssignments() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
         <div>
           <h2 className="text-2xl font-bold text-foreground mb-2">Assignments</h2>
-          <p className="text-muted-foreground">Assign training modules to employees and supervisors. Set appropriate trainers based on user role.</p>
+          <p className="text-muted-foreground">Assign training modules to employees, supervisors, managers, and admins. Set appropriate trainers based on user role.</p>
         </div>
 
         <Card>
@@ -124,6 +175,7 @@ export default function AdminAssignments() {
               // Find the selected user's role
               const selectedUser = employees?.find((e: any) => e.id === v);
               setSelectedUserRole(selectedUser?.role || null);
+              console.log('Employee selected:', v, 'Role:', selectedUser?.role);
             }}>
               <SelectTrigger>
                 <SelectValue placeholder="Select User" />
@@ -137,22 +189,64 @@ export default function AdminAssignments() {
               </SelectContent>
             </Select>
 
-            <Select value={trainerId ?? undefined} onValueChange={(v) => setTrainerId(v)}>
+            <Select value={trainerId ?? undefined} onValueChange={(v) => {
+              // Additional client-side validation
+              if (v === employeeId) {
+                console.log('Preventing self-assignment as trainer');
+                setMessage('Error: You cannot assign yourself as both trainee and trainer.');
+                return;
+              }
+              setTrainerId(v);
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder={
                   selectedUserRole === 'supervisor' 
-                    ? "Select Trainer (Manager)" 
-                    : "Select Trainer (Supervisor/Manager)"
+                    ? "Select Trainer (Manager/Admin)" 
+                    : selectedUserRole === 'manager'
+                    ? "Select Trainer (Manager/Admin)"
+                    : selectedUserRole === 'admin'
+                    ? "Select Trainer (Manager/Admin)"
+                    : "Select Trainer (Supervisor/Manager/Admin)"
                 } />
               </SelectTrigger>
               <SelectContent>
-                {trainers?.map((t: any) => (
-                  <SelectItem key={t.id} value={t.id}>{t.first_name} {t.last_name} • {t.email} ({t.role})</SelectItem>
-                ))}
+                {trainers && trainers.length > 0 ? (
+                  trainers.map((t: any) => (
+                    <SelectItem 
+                      key={t.id} 
+                      value={t.id}
+                      disabled={t.id === employeeId} // Disable if it's the same as selected trainee
+                    >
+                      {t.first_name} {t.last_name} • {t.email} ({t.role})
+                      {t.id === employeeId ? ' (Cannot train yourself)' : ''}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-trainers" disabled>
+                    {selectedUserRole === 'manager' && employeeId ? 
+                      'No other managers available (you cannot train yourself)' : 
+                      'No trainers available'
+                    }
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
 
             <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+
+            {/* Help text for manager self-assignment restriction */}
+            {selectedUserRole === 'manager' && employeeId && (
+              <div className="md:col-span-4">
+                <p className="text-xs text-muted-foreground">
+                  💡 Note: You can assign yourself as the trainer for other managers, but you cannot assign yourself as both trainee and trainer in the same assignment.
+                </p>
+                {trainers && trainers.length === 0 && (
+                  <p className="text-xs text-red-500 mt-1">
+                    ⚠️ No other managers available for training. You cannot train yourself.
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="md:col-span-4">
               <Button onClick={assignModule} disabled={!moduleId || !employeeId || assigning}>

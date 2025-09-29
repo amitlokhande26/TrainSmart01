@@ -32,11 +32,32 @@ export default function AdminUsers() {
   const [isUsersListExpanded, setIsUsersListExpanded] = React.useState(false);
 
   React.useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       const u = data.user;
-      const display = (u?.user_metadata as any)?.full_name || u?.email || 'Admin';
-      setName(display);
+      if (u) {
+        // Try to get first_name and last_name from the users table
+        const { data: userData } = await supabase
+          .from('users')
+          .select('first_name, last_name')
+          .eq('id', u.id)
+          .single();
+        
+        if (userData && userData.first_name && userData.last_name) {
+          setName(`${userData.first_name} ${userData.last_name}`);
+        } else {
+          // Fallback to user metadata or email
+          const display = (u?.user_metadata as any)?.full_name || u?.email || 'Admin';
+          setName(display);
+        }
+      }
     });
+  }, []);
+
+  // Auto-expand users list when navigating from dashboard
+  React.useEffect(() => {
+    if (window.location.hash === '#users-list') {
+      setIsUsersListExpanded(true);
+    }
   }, []);
 
   // Debounced search effect
@@ -292,7 +313,7 @@ export default function AdminUsers() {
         </Card>
 
         {/* Search Results */}
-        <Card className="border-gray-200">
+        <Card id="users-list" className="border-gray-200">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-gray-900">

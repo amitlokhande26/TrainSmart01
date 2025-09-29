@@ -6,14 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 
-export default function Supervisor() {
-  const [name, setName] = React.useState<string>('Supervisor');
-  const [signOpen, setSignOpen] = React.useState(false);
-  const [pendingCompletion, setPendingCompletion] = React.useState<any | null>(null);
-  const [signedName, setSignedName] = React.useState('');
-  const [activeFilter, setActiveFilter] = React.useState<'all' | 'assigned' | 'inprogress' | 'completed' | 'signoffs'>('all');
+export default function AdminMyTraining() {
+  const [name, setName] = React.useState<string>('Manager');
+  const [activeFilter, setActiveFilter] = React.useState<'all' | 'assigned' | 'inprogress' | 'completed'>('all');
 
   React.useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -30,7 +26,7 @@ export default function Supervisor() {
           setName(`${userData.first_name} ${userData.last_name}`);
         } else {
           // Fallback to user metadata or email
-          const display = (u?.user_metadata as any)?.full_name || u?.email || 'Supervisor';
+          const display = (u?.user_metadata as any)?.full_name || u?.email || 'Manager';
           setName(display);
         }
       }
@@ -44,11 +40,11 @@ export default function Supervisor() {
   const userId = session?.user?.id;
 
   const { data: allAssignments = [], refetch } = useQuery({
-    queryKey: ['supervisor-assignments', userId],
+    queryKey: ['admin-mytraining-assignments', userId],
     queryFn: async () => {
       if (!userId) return [] as any[];
       
-      // Get all assignments where supervisor is either the trainer OR the trainee
+      // Get all assignments where manager is either the trainer OR the trainee
       const { data: assignments, error: assignmentsError } = await supabase
         .from('assignments')
         .select(`
@@ -148,7 +144,7 @@ export default function Supervisor() {
         const trainee = users.find(u => u.id === assignment.assigned_to);
         const trainer = users.find(u => u.id === assignment.trainer_user_id);
         
-        // Determine if this supervisor is the trainer or trainee
+        // Determine if this manager is the trainer or trainee
         const isTrainer = assignment.trainer_user_id === userId;
         const isTrainee = assignment.assigned_to === userId;
         
@@ -182,17 +178,15 @@ export default function Supervisor() {
   const assigned = allAssignments.filter(a => !a.completion);
   const inProgress = allAssignments.filter(a => a.isInProgress);
   const completed = allAssignments.filter(a => a.isCompleted);
-  const toSign = allAssignments.filter(a => a.needsSignoff);
   
   // Separate trainer vs trainee assignments
   const trainerAssignments = allAssignments.filter(a => a.isTrainer);
   const traineeAssignments = allAssignments.filter(a => a.isTrainee);
-  
 
   React.useEffect(() => {
     if (!userId) return;
     const channel = supabase
-      .channel(`trainer-dashboard-${userId}`)
+      .channel(`admin-mytraining-dashboard-${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'assignments' }, () => refetch())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'completions' }, () => refetch())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'trainer_signoffs' }, () => refetch())
@@ -200,7 +194,6 @@ export default function Supervisor() {
     return () => { supabase.removeChannel(channel); };
   }, [userId, refetch]);
 
-  const [signingOff, setSigningOff] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [pendingAssignment, setPendingAssignment] = React.useState<any | null>(null);
 
@@ -295,59 +288,14 @@ export default function Supervisor() {
     }
   };
 
-  const handleSignoff = async () => {
-    if (!pendingCompletion || !userId || !signedName) return;
-    
-    setSigningOff(true);
-    try {
-      const email = session?.user?.email || '';
-      const ua = typeof navigator !== 'undefined' ? navigator.userAgent : undefined;
-      const completionId = pendingCompletion.completion?.id;
-      
-      if (!completionId) {
-        console.error('No completion ID found for sign-off');
-        alert('Error: No completion ID found');
-        return;
-      }
-      
-      console.log('Creating trainer sign-off for completion:', completionId);
-      
-      const { error } = await supabase.from('trainer_signoffs').insert({
-        completion_id: completionId,
-        trainer_user_id: userId,
-        signed_name_snapshot: signedName || name,
-        signed_email_snapshot: email,
-        user_agent: ua,
-      });
-      
-      if (error) {
-        console.error('Error creating trainer sign-off:', error);
-        alert(`Error: ${error.message}`);
-        return;
-      }
-      
-      console.log('Trainer sign-off created successfully');
-      alert('Sign-off completed successfully!');
-      setSignOpen(false);
-      setPendingCompletion(null);
-      setSignedName('');
-      await refetch();
-    } catch (error) {
-      console.error('Failed to create trainer sign-off:', error);
-      alert(`Failed to sign off: ${error}`);
-    } finally {
-      setSigningOff(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background">
-      <Header userType="supervisor" userName={name} onLogout={async () => supabase.auth.signOut()} />
+      <Header userType="admin" userName={name} onLogout={async () => supabase.auth.signOut()} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Supervisor Panel</h2>
-            <p className="text-muted-foreground">View your assigned training modules and manage trainer sign-offs.</p>
+            <h2 className="text-2xl font-bold text-foreground">My Training</h2>
+            <p className="text-muted-foreground">View your assigned training modules and track your progress.</p>
           </div>
           <Button 
             variant="outline" 
@@ -361,9 +309,8 @@ export default function Supervisor() {
           </Button>
         </div>
 
-
         {/* Status Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           {/* Assigned Card */}
           <Card 
             className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
@@ -430,28 +377,6 @@ export default function Supervisor() {
             </CardContent>
           </Card>
 
-          {/* Sign Offs Card */}
-          <Card 
-            className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
-              activeFilter === 'signoffs' 
-                ? 'bg-gradient-to-r from-purple-100 to-purple-200 ring-2 ring-purple-500' 
-                : 'bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200'
-            }`}
-            onClick={() => setActiveFilter('signoffs')}
-          >
-            <CardContent className="flex items-center justify-between p-6">
-              <div>
-                <h2 className="text-sm font-semibold text-gray-600">Sign Offs</h2>
-                <p className="text-3xl font-bold text-purple-800">{toSign.length}</p>
-              </div>
-              <div className="bg-purple-200 p-3 rounded-full">
-                <svg className="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* All Card */}
           <Card 
             className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
@@ -479,11 +404,10 @@ export default function Supervisor() {
         <Card>
           <CardHeader>
             <CardTitle>
-              {activeFilter === 'all' && 'My Assigned Training Modules'}
+              {activeFilter === 'all' && 'My Training Modules'}
               {activeFilter === 'assigned' && 'Assigned Training Modules'}
               {activeFilter === 'inprogress' && 'Training Modules In Progress'}
               {activeFilter === 'completed' && 'Completed Training Modules'}
-              {activeFilter === 'signoffs' && 'Pending Sign-Offs'}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -496,8 +420,6 @@ export default function Supervisor() {
                 filteredAssignments = inProgress;
               } else if (activeFilter === 'completed') {
                 filteredAssignments = completed;
-              } else if (activeFilter === 'signoffs') {
-                filteredAssignments = toSign;
               }
               
               if (filteredAssignments.length === 0) {
@@ -507,7 +429,6 @@ export default function Supervisor() {
                     {activeFilter === 'assigned' && 'No assigned training modules.'}
                     {activeFilter === 'inprogress' && 'No training modules in progress.'}
                     {activeFilter === 'completed' && 'No completed training modules.'}
-                    {activeFilter === 'signoffs' && 'No items awaiting sign-off.'}
                   </div>
                 );
               }
@@ -562,9 +483,6 @@ export default function Supervisor() {
                         {a.isTrainee && !hasCompletion && (
                           <Button onClick={() => { setPendingAssignment(a); setConfirmOpen(true); }}>Mark Complete</Button>
                         )}
-                        {a.isTrainer && activeFilter === 'signoffs' && needsSignoff && (
-                          <Button onClick={() => { setPendingCompletion(a); setSignOpen(true); }}>Trainer Sign-Off</Button>
-                        )}
                       </div>
                     </div>
                   );
@@ -600,27 +518,7 @@ export default function Supervisor() {
             </div>
           </DialogContent>
         </Dialog>
-
-        <Dialog open={signOpen} onOpenChange={setSignOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirm Trainer Sign-Off</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">Please type your full name as your digital signature to acknowledge training completion.</p>
-              <Input placeholder="Full name" value={signedName} onChange={(e) => setSignedName(e.target.value)} />
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setSignOpen(false)} disabled={signingOff}>Cancel</Button>
-                <Button onClick={handleSignoff} disabled={!signedName || signingOff}>
-                  {signingOff ? 'Signing Off...' : 'Sign Off'}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       </main>
     </div>
   );
 }
-
-

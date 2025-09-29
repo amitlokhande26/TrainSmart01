@@ -82,11 +82,25 @@ export default function AdminReports() {
   React.useEffect(() => {
     console.log('AdminReports component mounted');
     
-    supabase.auth.getUser().then(({ data, error }) => {
+    supabase.auth.getUser().then(async ({ data, error }) => {
       console.log('Auth user result:', { data, error });
       const u = data.user;
-      const display = (u?.user_metadata as any)?.full_name || u?.email || 'Admin';
-      setName(display);
+      if (u) {
+        // Try to get first_name and last_name from the users table
+        const { data: userData } = await supabase
+          .from('users')
+          .select('first_name, last_name')
+          .eq('id', u.id)
+          .single();
+        
+        if (userData && userData.first_name && userData.last_name) {
+          setName(`${userData.first_name} ${userData.last_name}`);
+        } else {
+          // Fallback to user metadata or email
+          const display = (u?.user_metadata as any)?.full_name || u?.email || 'Admin';
+          setName(display);
+        }
+      }
     }).catch(err => {
       console.error('Auth error:', err);
     });
@@ -408,47 +422,76 @@ export default function AdminReports() {
       .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
   }, [employeeLogs, fromDate, toDate]);
 
-  // NEW: Employee coverage data for pie chart
+  // Get all active users for pie chart
+  const { data: allActiveUsers } = useQuery({
+    queryKey: ['all-active-users-simple'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, email, role')
+          .eq('is_active', true);
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching active users:', error);
+        return [];
+      }
+    }
+  });
+
+  // NEW: Employee coverage data for pie chart - includes ALL active users
   const employeeCoverageData = React.useMemo(() => {
-    if (!employeeLogs || employeeLogs.length === 0) return [];
+    // If no data available, return empty data to prevent errors
+    if (!allActiveUsers || allActiveUsers.length === 0) {
+      return [
+        { name: "Fully Compliant", value: 0, percentage: 0 },
+        { name: "In-Progress", value: 0, percentage: 0 },
+        { name: "Not Started", value: 0, percentage: 0 }
+      ];
+    }
     
-    // Get unique employees and their compliance status
-    const employeeMap = new Map();
+    // Create a map of all active users, initially all "Not Started"
+    const userComplianceMap = new Map();
     
-    employeeLogs.forEach((row: any) => {
-      const employeeId = row.employee_email; // Use email as unique identifier
-      
-      if (!employeeMap.has(employeeId)) {
-        employeeMap.set(employeeId, {
-          name: row.employee,
-          email: row.employee_email,
-          hasCompletions: false,
-          hasSignoffs: false
-        });
-      }
-      
-      const employee = employeeMap.get(employeeId);
-      employee.hasCompletions = true;
-      
-      if (row.has_trainer_signoff) {
-        employee.hasSignoffs = true;
-      }
+    allActiveUsers.forEach((user: any) => {
+      userComplianceMap.set(user.email, {
+        name: `${user.first_name} ${user.last_name}`.trim(),
+        email: user.email,
+        role: user.role,
+        hasCompletions: false,
+        hasSignoffs: false
+      });
     });
     
-    // Calculate compliance percentages
-    const employees = Array.from(employeeMap.values());
-    const totalEmployees = employees.length;
+    // Update compliance status based on employeeLogs data
+    if (employeeLogs && employeeLogs.length > 0) {
+      employeeLogs.forEach((row: any) => {
+        const employeeId = row.employee_email;
+        if (userComplianceMap.has(employeeId)) {
+          const employee = userComplianceMap.get(employeeId);
+          employee.hasCompletions = true;
+          if (row.has_trainer_signoff) {
+            employee.hasSignoffs = true;
+          }
+        }
+      });
+    }
     
-    const fullyCompliant = employees.filter(emp => emp.hasCompletions && emp.hasSignoffs).length;
-    const inProgress = employees.filter(emp => emp.hasCompletions && !emp.hasSignoffs).length;
-    const notStarted = employees.filter(emp => !emp.hasCompletions).length;
+    // Calculate compliance categories
+    const allUsers = Array.from(userComplianceMap.values());
+    const totalUsers = allUsers.length;
+    
+    const fullyCompliant = allUsers.filter(user => user.hasCompletions && user.hasSignoffs).length;
+    const inProgress = allUsers.filter(user => user.hasCompletions && !user.hasSignoffs).length;
+    const notStarted = allUsers.filter(user => !user.hasCompletions).length;
     
     return [
-      { name: "Fully Compliant", value: fullyCompliant, percentage: Math.round((fullyCompliant / totalEmployees) * 100) },
-      { name: "In-Progress", value: inProgress, percentage: Math.round((inProgress / totalEmployees) * 100) },
-      { name: "Not Started", value: notStarted, percentage: Math.round((notStarted / totalEmployees) * 100) }
+      { name: "Fully Compliant", value: fullyCompliant, percentage: Math.round((fullyCompliant / totalUsers) * 100) },
+      { name: "In-Progress", value: inProgress, percentage: Math.round((inProgress / totalUsers) * 100) },
+      { name: "Not Started", value: notStarted, percentage: Math.round((notStarted / totalUsers) * 100) }
     ];
-  }, [employeeLogs]);
+  }, [allActiveUsers, employeeLogs]);
 
   // NEW: Chart colors using app's brand colors
   const chartColors = {
