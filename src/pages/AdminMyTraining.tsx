@@ -44,7 +44,7 @@ export default function AdminMyTraining() {
     queryFn: async () => {
       if (!userId) return [] as any[];
       
-      // Get all assignments where manager is either the trainer OR the trainee
+      // Get only assignments where the current user is the trainee (My Training)
       const { data: assignments, error: assignmentsError } = await supabase
         .from('assignments')
         .select(`
@@ -56,7 +56,7 @@ export default function AdminMyTraining() {
           module_id,
           assigned_to
         `)
-        .or(`trainer_user_id.eq.${userId},assigned_to.eq.${userId}`)
+        .eq('assigned_to', userId)
         .order('assigned_at', { ascending: false });
       
       if (assignmentsError) {
@@ -179,9 +179,7 @@ export default function AdminMyTraining() {
   const inProgress = allAssignments.filter(a => a.status === 'in_progress' && !a.isCompleted);
   const completed = allAssignments.filter(a => a.isCompleted);
   
-  // Separate trainer vs trainee assignments
-  const trainerAssignments = allAssignments.filter(a => a.isTrainer);
-  const traineeAssignments = allAssignments.filter(a => a.isTrainee);
+      // No need to separate trainer vs trainee here; this tab only shows trainee assignments
 
   React.useEffect(() => {
     if (!userId) return;

@@ -134,125 +134,136 @@ export default function AdminAssignments() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-50">
       <Header userType="admin" userName={name} onLogout={handleLogout} />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">Assignments</h2>
-          <p className="text-muted-foreground">Assign training modules to employees, supervisors, managers, and admins. Set appropriate trainers based on user role.</p>
+      <main className="container mx-auto px-4 py-8 space-y-8">
+        <div className="mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 mb-1">Assignments</h1>
+          <p className="text-gray-600">Assign training modules to users and choose appropriate trainers by role.</p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Create Assignment</CardTitle>
+        <Card className="shadow-md border-0 rounded-2xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-semibold text-gray-900">Create Assignment</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-4">
-            <Select onValueChange={(v) => { setSelectedLine(v); setModuleId(null); }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Line" />
-              </SelectTrigger>
-              <SelectContent>
-                {lines?.map((l: any) => (
-                  <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="md:col-span-1">
+              <div className="text-sm font-medium text-gray-700 mb-1">Production Line</div>
+              <Select onValueChange={(v) => { setSelectedLine(v); setModuleId(null); }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Line" />
+                </SelectTrigger>
+                <SelectContent>
+                  {lines?.map((l: any) => (
+                    <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Select value={moduleId ?? undefined} onValueChange={(v) => setModuleId(v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Module" />
-              </SelectTrigger>
-              <SelectContent>
-                {modules?.map((m: any) => (
-                  <SelectItem key={m.id} value={m.id}>{m.title} (v{m.version})</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="md:col-span-1">
+              <div className="text-sm font-medium text-gray-700 mb-1">Module</div>
+              <Select value={moduleId ?? undefined} onValueChange={(v) => setModuleId(v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Module" />
+                </SelectTrigger>
+                <SelectContent>
+                  {modules?.map((m: any) => (
+                    <SelectItem key={m.id} value={m.id}>{m.title} (v{m.version})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Select value={employeeId ?? undefined} onValueChange={(v) => {
-              setEmployeeId(v);
-              setTrainerId(null); // Reset trainer when user changes
-              // Find the selected user's role
-              const selectedUser = employees?.find((e: any) => e.id === v);
-              setSelectedUserRole(selectedUser?.role || null);
-              console.log('Employee selected:', v, 'Role:', selectedUser?.role);
-            }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select User" />
-              </SelectTrigger>
-              <SelectContent>
-                {employees?.map((e: any) => (
-                  <SelectItem key={e.id} value={e.id}>
-                    {e.first_name} {e.last_name} • {e.email} ({e.role})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={trainerId ?? undefined} onValueChange={(v) => {
-              // Additional client-side validation
-              if (v === employeeId) {
-                console.log('Preventing self-assignment as trainer');
-                setMessage('Error: You cannot assign yourself as both trainee and trainer.');
-                return;
-              }
-              setTrainerId(v);
-            }}>
-              <SelectTrigger>
-                <SelectValue placeholder={
-                  selectedUserRole === 'supervisor' 
-                    ? "Select Trainer (Manager/Admin)" 
-                    : selectedUserRole === 'manager'
-                    ? "Select Trainer (Manager/Admin)"
-                    : selectedUserRole === 'admin'
-                    ? "Select Trainer (Manager/Admin)"
-                    : "Select Trainer (Supervisor/Manager/Admin)"
-                } />
-              </SelectTrigger>
-              <SelectContent>
-                {trainers && trainers.length > 0 ? (
-                  trainers.map((t: any) => (
-                    <SelectItem 
-                      key={t.id} 
-                      value={t.id}
-                      disabled={t.id === employeeId} // Disable if it's the same as selected trainee
-                    >
-                      {t.first_name} {t.last_name} • {t.email} ({t.role})
-                      {t.id === employeeId ? ' (Cannot train yourself)' : ''}
+            <div className="md:col-span-1">
+              <div className="text-sm font-medium text-gray-700 mb-1">Trainee</div>
+              <Select value={employeeId ?? undefined} onValueChange={(v) => {
+                setEmployeeId(v);
+                setTrainerId(null);
+                const selectedUser = employees?.find((e: any) => e.id === v);
+                setSelectedUserRole(selectedUser?.role || null);
+                console.log('Employee selected:', v, 'Role:', selectedUser?.role);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select User" />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees?.map((e: any) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.first_name} {e.last_name} • {e.email} ({e.role})
                     </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="no-trainers" disabled>
-                    {selectedUserRole === 'manager' && employeeId ? 
-                      'No other managers available (you cannot train yourself)' : 
-                      'No trainers available'
-                    }
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            <div className="md:col-span-1">
+              <div className="text-sm font-medium text-gray-700 mb-1">Trainer</div>
+              <Select value={trainerId ?? undefined} onValueChange={(v) => {
+                if (v === employeeId) {
+                  console.log('Preventing self-assignment as trainer');
+                  setMessage('Error: You cannot assign yourself as both trainee and trainer.');
+                  return;
+                }
+                setTrainerId(v);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder={
+                    selectedUserRole === 'supervisor'
+                      ? 'Select Trainer (Manager/Admin)'
+                      : selectedUserRole === 'manager'
+                      ? 'Select Trainer (Manager/Admin)'
+                      : selectedUserRole === 'admin'
+                      ? 'Select Trainer (Manager/Admin)'
+                      : 'Select Trainer (Supervisor/Manager/Admin)'
+                  } />
+                </SelectTrigger>
+                <SelectContent>
+                  {trainers && trainers.length > 0 ? (
+                    trainers.map((t: any) => (
+                      <SelectItem
+                        key={t.id}
+                        value={t.id}
+                        disabled={t.id === employeeId}
+                      >
+                        {t.first_name} {t.last_name} • {t.email} ({t.role})
+                        {t.id === employeeId ? ' (Cannot train yourself)' : ''}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-trainers" disabled>
+                      {selectedUserRole === 'manager' && employeeId
+                        ? 'No other managers available (you cannot train yourself)'
+                        : 'No trainers available'}
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
 
-            {/* Help text for manager self-assignment restriction */}
+            <div className="md:col-span-1">
+              <div className="text-sm font-medium text-gray-700 mb-1">Due Date</div>
+              <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            </div>
+
             {selectedUserRole === 'manager' && employeeId && (
               <div className="md:col-span-4">
-                <p className="text-xs text-muted-foreground">
+                <div className="rounded-lg bg-yellow-50 text-yellow-800 px-3 py-2 text-xs">
                   💡 Note: You can assign yourself as the trainer for other managers, but you cannot assign yourself as both trainee and trainer in the same assignment.
-                </p>
-                {trainers && trainers.length === 0 && (
-                  <p className="text-xs text-red-500 mt-1">
-                    ⚠️ No other managers available for training. You cannot train yourself.
-                  </p>
-                )}
+                  {trainers && trainers.length === 0 && (
+                    <span className="block text-yellow-900 mt-1">
+                      ⚠️ No other managers available for training. You cannot train yourself.
+                    </span>
+                  )}
+                </div>
               </div>
             )}
 
-            <div className="md:col-span-4">
+            <div className="md:col-span-4 flex items-center gap-3 pt-2">
               <Button onClick={assignModule} disabled={!moduleId || !employeeId || assigning}>
                 {assigning ? 'Assigning...' : 'Assign Module'}
               </Button>
-              {message && <span className="ml-3 text-sm text-muted-foreground">{message}</span>}
+              {message && <span className="text-sm text-gray-600">{message}</span>}
             </div>
           </CardContent>
         </Card>
