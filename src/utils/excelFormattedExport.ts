@@ -237,7 +237,16 @@ export async function exportTrainingReportsExcelFormatted(
       } else if (key === 'signed_at' || key === 'trainer_signed_at') {
         value = formatTimeAndDate(value);
       } else if (key === 'has_trainer_signoff') {
-        value = value ? 'Yes' : 'No';
+        if (typeof value === 'boolean') {
+          value = value ? 'Yes' : 'No';
+        } else if (typeof value === 'string') {
+          const normalized = value.trim().toLowerCase();
+          value = (normalized === 'yes' || normalized === 'true' || normalized === '1') ? 'Yes' : 'No';
+        } else if (typeof value === 'number') {
+          value = value === 1 ? 'Yes' : 'No';
+        } else {
+          value = 'No';
+        }
       } else if (key === 'module_version') {
         value = value ? `v${value}` : 'v1.0';
       }
