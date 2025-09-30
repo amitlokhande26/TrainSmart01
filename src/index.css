@@ -144,3 +144,13 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Prevent layout shift when vertical scrollbar appears */
+@layer base {
+  @supports (scrollbar-gutter: stable) {
+    html { scrollbar-gutter: stable; }
+  }
+  @supports not (scrollbar-gutter: stable) {
+    html { overflow-y: scroll; }
+  }
+}

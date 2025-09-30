@@ -16,6 +16,17 @@ export interface FormattedData {
   [key: string]: any;
 }
 
+// Formats a value into "HH:MM Date" using 24h time, keeping locale date
+function formatTimeAndDate(value: any): string {
+  if (!value) return '';
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return '';
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const datePart = d.toLocaleDateString();
+  return `${hours}:${minutes} | ${datePart}`;
+}
+
 /**
  * Creates a professionally formatted Excel workbook using ExcelJS
  */
@@ -221,8 +232,10 @@ export async function exportTrainingReportsExcelFormatted(
       let value = row[key];
 
       // Format specific fields
-      if (key === 'completed_at' || key === 'due_date' || key === 'signed_at' || key === 'trainer_signed_at') {
+      if (key === 'completed_at' || key === 'due_date') {
         value = value ? new Date(value).toLocaleDateString() : '';
+      } else if (key === 'signed_at' || key === 'trainer_signed_at') {
+        value = formatTimeAndDate(value);
       } else if (key === 'has_trainer_signoff') {
         value = value ? 'Yes' : 'No';
       } else if (key === 'module_version') {
