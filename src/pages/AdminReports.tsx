@@ -736,6 +736,30 @@ export default function AdminReports() {
                 )}
               </div>
             </CardContent>
+            <div className="px-6 pb-4">
+              <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-600">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                  <span className="font-medium">🧾 Active Modules:</span>
+                  <span className="font-bold text-blue-700">{modules?.length || 0}</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                  <span className="font-medium">Not Started:</span>
+                  <span className="font-bold text-gray-600">{summaryStats.uniqueEmployees - (employeeCoverageData.find(d => d.name === "Fully Compliant")?.value || 0) - (employeeCoverageData.find(d => d.name === "In-Progress")?.value || 0)}</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                  <span className="font-medium">Completed:</span>
+                  <span className="font-bold text-orange-700">{summaryStats.totalCompletions}</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  <span className="font-medium">Signed-off:</span>
+                  <span className="font-bold text-green-700">{summaryStats.withTrainerSignoff}</span>
+                </span>
+              </div>
+            </div>
           </Card>
 
           {/* Employee Coverage */}
