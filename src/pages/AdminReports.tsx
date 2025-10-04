@@ -199,7 +199,7 @@ export default function AdminReports() {
       try {
         const { data, error } = await supabase
           .from('assignments')
-          .select('id, module_id, assigned_to, modules!inner(id, title)');
+          .select('id, status, module_id, assigned_to, modules!inner(id, title)');
         if (error) throw error;
         return data || [];
       } catch (error) {
@@ -459,75 +459,71 @@ export default function AdminReports() {
     }
   });
 
-  // NEW: Module coverage data for pie chart - module-based counting
+  // NEW: Module coverage data for pie chart - assignment-based counting with proper status logic
   const moduleCoverageData = React.useMemo(() => {
     // If no assignments available, return empty data to prevent errors
     if (!allAssignments || allAssignments.length === 0) {
       return [
-        { name: "Signed-off", value: 0, percentage: 0 },
-        { name: "Completed", value: 0, percentage: 0 },
+        { name: "Approved", value: 0, percentage: 0 },
+        { name: "Awaiting Sign-Off", value: 0, percentage: 0 },
         { name: "In Progress", value: 0, percentage: 0 },
         { name: "Not Started", value: 0, percentage: 0 }
       ];
     }
     
-    // Create a map of all assigned modules
-    const moduleStatusMap = new Map();
+    // Get completions and signoffs data for status determination
+    const completionsMap = new Map();
+    const signoffsMap = new Map();
     
-    allAssignments.forEach((assignment: any) => {
-      if (!moduleStatusMap.has(assignment.module_id)) {
-        moduleStatusMap.set(assignment.module_id, {
-          moduleId: assignment.module_id,
-          moduleTitle: assignment.modules?.title || 'Unknown Module',
-          hasCompletions: false,
-          hasSignoffs: false,
-          hasStarted: false
-        });
-      }
-    });
-    
-    // Update module status based on employeeLogs data
     if (employeeLogs && employeeLogs.length > 0) {
       employeeLogs.forEach((row: any) => {
-        // Find the assignment for this completion
-        const assignment = allAssignments.find(a => a.id === row.assignment_id);
-        if (assignment && moduleStatusMap.has(assignment.module_id)) {
-          const module = moduleStatusMap.get(assignment.module_id);
-          module.hasStarted = true;
-          module.hasCompletions = true;
-          if (row.has_trainer_signoff) {
-            module.hasSignoffs = true;
-          }
+        completionsMap.set(row.assignment_id, row);
+        if (row.has_trainer_signoff) {
+          signoffsMap.set(row.assignment_id, true);
         }
       });
     }
     
-    // Calculate module status categories
-    const allModules = Array.from(moduleStatusMap.values());
-    const totalModules = allModules.length;
+    // Process each assignment to determine its status
+    let approved = 0;
+    let awaitingSignoff = 0;
+    let inProgress = 0;
+    let notStarted = 0;
     
-    const signedOff = allModules.filter(module => module.hasCompletions && module.hasSignoffs).length;
-    const completed = allModules.filter(module => module.hasCompletions && !module.hasSignoffs).length;
-    const inProgress = allModules.filter(module => module.hasStarted && !module.hasCompletions).length;
-    const notStarted = allModules.filter(module => !module.hasStarted).length;
+    allAssignments.forEach((assignment: any) => {
+      const hasCompletion = completionsMap.has(assignment.id);
+      const hasSignoff = signoffsMap.has(assignment.id);
+      
+      // Determine status based on assignment status, completion, and signoff
+      if (hasCompletion && hasSignoff) {
+        approved++;
+      } else if (hasCompletion && !hasSignoff) {
+        awaitingSignoff++;
+      } else if (assignment.status === 'in_progress') {
+        inProgress++;
+      } else if (assignment.status === 'assigned') {
+        notStarted++;
+      }
+    });
+    
+    const totalAssignments = allAssignments.length;
     
     // Debug logging
     console.log('📊 Module Coverage Debug:', {
-      totalModules,
+      totalAssignments,
       allAssignments: allAssignments?.length,
       employeeLogs: employeeLogs?.length,
-      signedOff,
-      completed,
+      approved,
+      awaitingSignoff,
       inProgress,
-      notStarted,
-      moduleStatusMap: Array.from(moduleStatusMap.entries())
+      notStarted
     });
     
     return [
-      { name: "Signed-off", value: signedOff, percentage: Math.round((signedOff / totalModules) * 100) },
-      { name: "Completed", value: completed, percentage: Math.round((completed / totalModules) * 100) },
-      { name: "In Progress", value: inProgress, percentage: Math.round((inProgress / totalModules) * 100) },
-      { name: "Not Started", value: notStarted, percentage: Math.round((notStarted / totalModules) * 100) }
+      { name: "Approved", value: approved, percentage: Math.round((approved / totalAssignments) * 100) },
+      { name: "Awaiting Sign-Off", value: awaitingSignoff, percentage: Math.round((awaitingSignoff / totalAssignments) * 100) },
+      { name: "In Progress", value: inProgress, percentage: Math.round((inProgress / totalAssignments) * 100) },
+      { name: "Not Started", value: notStarted, percentage: Math.round((notStarted / totalAssignments) * 100) }
     ];
   }, [employeeLogs, allAssignments]);
 
