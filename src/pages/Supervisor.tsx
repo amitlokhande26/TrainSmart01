@@ -186,7 +186,8 @@ export default function Supervisor() {
   // Categorize trainee assignments (My Trainings)
   const myAssigned = traineeAssignments.filter(a => a.status === 'assigned');
   const myInProgress = traineeAssignments.filter(a => a.status === 'in_progress' && !a.isCompleted);
-  const myCompleted = traineeAssignments.filter(a => a.isCompleted);
+  const myCompleted = traineeAssignments.filter(a => a.isCompleted && !a.signoff?.id);
+  const myApproved = traineeAssignments.filter(a => a.isCompleted && a.signoff?.id);
   
   // Categorize trainer assignments (Trainer Sign-offs)
   const pendingSignoffs = trainerAssignments.filter(a => a.needsSignoff);
@@ -393,7 +394,7 @@ export default function Supervisor() {
             variant={activeTab === 'mytrainings' ? 'default' : 'ghost'}
             onClick={() => {
               setActiveTab('mytrainings');
-              setActiveFilter('all');
+              setActiveFilter('assigned');
             }}
             className="flex items-center gap-2"
           >
@@ -471,8 +472,8 @@ export default function Supervisor() {
               <CardContent className="flex items-center justify-between p-6">
                 <div>
                   <h2 className="text-sm font-semibold text-gray-600">
-                    Completed<br />
-                    – Awaiting Sign-Off
+                    Completed:
+                    Awaiting Sign Off
                   </h2>
                   <p className="text-3xl font-bold text-green-800">{myCompleted.length}</p>
                 </div>
@@ -484,23 +485,23 @@ export default function Supervisor() {
               </CardContent>
             </Card>
 
-            {/* My All Card */}
+            {/* My Approved Card */}
             <Card 
               className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
-                activeFilter === 'all' 
-                  ? 'bg-gradient-to-r from-gray-100 to-gray-200 ring-2 ring-gray-500' 
-                  : 'bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200'
+                activeFilter === 'approved' 
+                  ? 'bg-gradient-to-r from-emerald-100 to-emerald-200 ring-2 ring-emerald-500' 
+                  : 'bg-gradient-to-r from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-200'
               }`}
-              onClick={() => setActiveFilter('all')}
+              onClick={() => setActiveFilter('approved')}
             >
               <CardContent className="flex items-center justify-between p-6">
                 <div>
-                  <h2 className="text-sm font-semibold text-gray-600">All</h2>
-                  <p className="text-3xl font-bold text-gray-800">{traineeAssignments.length}</p>
+                  <h2 className="text-sm font-semibold text-gray-600">Approved</h2>
+                  <p className="text-3xl font-bold text-emerald-800">{myApproved.length}</p>
                 </div>
-                <div className="bg-gray-200 p-3 rounded-full">
-                  <svg className="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                <div className="bg-emerald-200 p-3 rounded-full">
+                  <svg className="h-6 w-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
               </CardContent>
@@ -582,7 +583,6 @@ export default function Supervisor() {
             <CardTitle>
               {activeTab === 'mytrainings' && (
                 <>
-                  {activeFilter === 'all' && '🔰 My Training Modules'}
                   {activeFilter === 'assigned' && '📋 Assigned Training Modules'}
                   {activeFilter === 'inprogress' && '⏳ Training Modules In Progress'}
                   {activeFilter === 'completed' && (
@@ -591,6 +591,7 @@ export default function Supervisor() {
                       – Awaiting Sign-Off
                     </>
                   )}
+                  {activeFilter === 'approved' && '✅ Approved Training Modules'}
                 </>
               )}
               {activeTab === 'trainersignoffs' && (
@@ -614,8 +615,8 @@ export default function Supervisor() {
                   filteredAssignments = myInProgress;
                 } else if (activeFilter === 'completed') {
                   filteredAssignments = myCompleted;
-                } else if (activeFilter === 'all') {
-                  filteredAssignments = traineeAssignments;
+                } else if (activeFilter === 'approved') {
+                  filteredAssignments = myApproved;
                 }
               } else {
                 // Trainer Sign-offs tab - show trainer assignments
@@ -633,10 +634,10 @@ export default function Supervisor() {
                   <div className="text-sm text-muted-foreground">
                     {activeTab === 'mytrainings' && (
                       <>
-                        {activeFilter === 'all' && 'No training modules assigned to you yet.'}
                         {activeFilter === 'assigned' && 'No assigned training modules.'}
                         {activeFilter === 'inprogress' && 'No training modules in progress.'}
                         {activeFilter === 'completed' && 'No completed training modules awaiting sign-off.'}
+                        {activeFilter === 'approved' && 'No approved training modules yet.'}
                       </>
                     )}
                     {activeTab === 'trainersignoffs' && (
