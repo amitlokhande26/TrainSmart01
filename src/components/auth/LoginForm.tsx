@@ -112,6 +112,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
 
       if (error) {
         setError(error.message);
+        setLoading(false);
         return;
       }
 
@@ -165,6 +166,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
         console.log('About to call onLogin and navigate - this should NOT happen for password reset');
         if (showPasswordReset) {
           console.log('BLOCKING onLogin and navigate - password reset modal is active!');
+          setLoading(false);
           return;
         }
         wrappedOnLogin(userType, displayName);
