@@ -440,66 +440,89 @@ export default function AdminReports() {
     }
   });
 
-  // NEW: Employee coverage data for pie chart - includes ALL active users
-  const employeeCoverageData = React.useMemo(() => {
+  // Get all assignments for module coverage calculation
+  const { data: allAssignments } = useQuery({
+    queryKey: ['all-assignments-for-coverage'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('assignments')
+          .select('id, module_id, modules!inner(id, title)');
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching assignments:', error);
+        return [];
+      }
+    }
+  });
+
+  // NEW: Module coverage data for pie chart - module-based counting
+  const moduleCoverageData = React.useMemo(() => {
     // If no data available, return empty data to prevent errors
-    if (!allActiveUsers || allActiveUsers.length === 0) {
+    if (!employeeLogs || employeeLogs.length === 0 || !allAssignments || allAssignments.length === 0) {
       return [
-        { name: "Fully Compliant", value: 0, percentage: 0 },
-        { name: "In-Progress", value: 0, percentage: 0 },
+        { name: "Signed-off", value: 0, percentage: 0 },
+        { name: "Completed", value: 0, percentage: 0 },
+        { name: "In Progress", value: 0, percentage: 0 },
         { name: "Not Started", value: 0, percentage: 0 }
       ];
     }
     
-    // Create a map of all active users, initially all "Not Started"
-    const userComplianceMap = new Map();
+    // Create a map of all assigned modules
+    const moduleStatusMap = new Map();
     
-    allActiveUsers.forEach((user: any) => {
-      userComplianceMap.set(user.email, {
-        name: `${user.first_name} ${user.last_name}`.trim(),
-        email: user.email,
-        role: user.role,
-        hasCompletions: false,
-        hasSignoffs: false
-      });
+    allAssignments.forEach((assignment: any) => {
+      if (!moduleStatusMap.has(assignment.module_id)) {
+        moduleStatusMap.set(assignment.module_id, {
+          moduleId: assignment.module_id,
+          moduleTitle: assignment.modules?.title || 'Unknown Module',
+          hasCompletions: false,
+          hasSignoffs: false,
+          hasStarted: false
+        });
+      }
     });
     
-    // Update compliance status based on employeeLogs data
-    if (employeeLogs && employeeLogs.length > 0) {
-      employeeLogs.forEach((row: any) => {
-        const employeeId = row.employee_email;
-        if (userComplianceMap.has(employeeId)) {
-          const employee = userComplianceMap.get(employeeId);
-          employee.hasCompletions = true;
-          if (row.has_trainer_signoff) {
-            employee.hasSignoffs = true;
-          }
+    // Update module status based on employeeLogs data
+    employeeLogs.forEach((row: any) => {
+      // Find the assignment for this completion
+      const assignment = allAssignments.find(a => a.id === row.assignment_id);
+      if (assignment && moduleStatusMap.has(assignment.module_id)) {
+        const module = moduleStatusMap.get(assignment.module_id);
+        module.hasStarted = true;
+        module.hasCompletions = true;
+        if (row.has_trainer_signoff) {
+          module.hasSignoffs = true;
         }
-      });
-    }
+      }
+    });
     
-    // Calculate compliance categories
-    const allUsers = Array.from(userComplianceMap.values());
-    const totalUsers = allUsers.length;
+    // Calculate module status categories
+    const allModules = Array.from(moduleStatusMap.values());
+    const totalModules = allModules.length;
     
-    const fullyCompliant = allUsers.filter(user => user.hasCompletions && user.hasSignoffs).length;
-    const inProgress = allUsers.filter(user => user.hasCompletions && !user.hasSignoffs).length;
-    const notStarted = allUsers.filter(user => !user.hasCompletions).length;
+    const signedOff = allModules.filter(module => module.hasCompletions && module.hasSignoffs).length;
+    const completed = allModules.filter(module => module.hasCompletions && !module.hasSignoffs).length;
+    const inProgress = allModules.filter(module => module.hasStarted && !module.hasCompletions).length;
+    const notStarted = allModules.filter(module => !module.hasStarted).length;
     
     return [
-      { name: "Fully Compliant", value: fullyCompliant, percentage: Math.round((fullyCompliant / totalUsers) * 100) },
-      { name: "In-Progress", value: inProgress, percentage: Math.round((inProgress / totalUsers) * 100) },
-      { name: "Not Started", value: notStarted, percentage: Math.round((notStarted / totalUsers) * 100) }
+      { name: "Signed-off", value: signedOff, percentage: Math.round((signedOff / totalModules) * 100) },
+      { name: "Completed", value: completed, percentage: Math.round((completed / totalModules) * 100) },
+      { name: "In Progress", value: inProgress, percentage: Math.round((inProgress / totalModules) * 100) },
+      { name: "Not Started", value: notStarted, percentage: Math.round((notStarted / totalModules) * 100) }
     ];
-  }, [allActiveUsers, employeeLogs]);
+  }, [employeeLogs, allAssignments]);
 
   // NEW: Chart colors using app's brand colors
   const chartColors = {
     completions: 'hsl(217 91% 60%)', // Secondary blue
     signoffs: 'hsl(142 76% 36%)',    // Success green
-    fullyCompliant: 'hsl(142 76% 36%)', // Success green
-    inProgress: 'hsl(35 91% 62%)',      // Warning orange
-    notStarted: 'hsl(0 84% 60%)'        // Destructive red
+    signedOff: 'hsl(142 76% 36%)',   // Success green
+    completed: 'hsl(35 91% 62%)',    // Warning orange
+    inProgress: 'hsl(217 91% 60%)',  // Blue
+    notStarted: 'hsl(0 84% 60%)'     // Destructive red
   };
 
 
@@ -736,38 +759,38 @@ export default function AdminReports() {
                 )}
               </div>
             </CardContent>
-            <div className="px-6 pb-4">
-              <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-600">
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                  <span className="font-medium">🧾 Active Modules:</span>
-                  <span className="font-bold text-blue-700">{modules?.length || 0}</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                  <span className="font-medium">Not Started:</span>
-                  <span className="font-bold text-red-700">{employeeCoverageData.find(d => d.name === "Not Started")?.value || 0}</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
-                  <span className="font-medium">Completed:</span>
-                  <span className="font-bold text-yellow-700">{summaryStats.totalCompletions}</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                  <span className="font-medium">Signed-off:</span>
-                  <span className="font-bold text-green-700">{summaryStats.withTrainerSignoff}</span>
-                </span>
-              </div>
-            </div>
+        <div className="px-6 pb-4">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-600">
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+              <span className="font-medium">🧾 Active Modules:</span>
+              <span className="font-bold text-blue-700">{allAssignments?.length || 0}</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+              <span className="font-medium">Not Started:</span>
+              <span className="font-bold text-red-700">{moduleCoverageData.find(d => d.name === "Not Started")?.value || 0}</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+              <span className="font-medium">Completed:</span>
+              <span className="font-bold text-yellow-700">{moduleCoverageData.find(d => d.name === "Completed")?.value || 0}</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+              <span className="font-medium">Signed-off:</span>
+              <span className="font-bold text-green-700">{moduleCoverageData.find(d => d.name === "Signed-off")?.value || 0}</span>
+            </span>
+          </div>
+        </div>
           </Card>
 
-          {/* Employee Coverage */}
+          {/* Module Coverage */}
           <Card className="shadow-md border-0">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Users className="h-5 w-5 text-green-600" />
-                Employee Coverage
+                <BookOpen className="h-5 w-5 text-green-600" />
+                Module Coverage
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -775,18 +798,19 @@ export default function AdminReports() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={employeeCoverageData}
+                      data={moduleCoverageData}
                       dataKey="value"
                       nameKey="name"
                       outerRadius={70}
                       label={({ name, percentage }) => `${name}: ${percentage}%`}
                     >
-                      {employeeCoverageData.map((entry, index) => (
+                      {moduleCoverageData.map((entry, index) => (
                         <Cell 
                           key={`cell-${index}`} 
                           fill={
-                            entry.name === "Fully Compliant" ? chartColors.fullyCompliant :
-                            entry.name === "In-Progress" ? chartColors.inProgress :
+                            entry.name === "Signed-off" ? chartColors.signedOff :
+                            entry.name === "Completed" ? chartColors.completed :
+                            entry.name === "In Progress" ? chartColors.inProgress :
                             chartColors.notStarted
                           } 
                         />
