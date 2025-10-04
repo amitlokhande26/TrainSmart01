@@ -52,11 +52,23 @@ export default function AdminAssignments() {
   const [dueDate, setDueDate] = React.useState<string>('');
   const [assigning, setAssigning] = React.useState(false);
   const [message, setMessage] = React.useState<string | null>(null);
+  const [editingAssignment, setEditingAssignment] = React.useState<any | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  const [assignmentsSearch, setAssignmentsSearch] = React.useState<string>('');
+  const [debouncedAssignmentsSearch, setDebouncedAssignmentsSearch] = React.useState<string>('');
 
   // Reset trainer when employee changes
   React.useEffect(() => {
     setTrainerId(null);
   }, [employeeId]);
+
+  // Debounce assignments search
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedAssignmentsSearch(assignmentsSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [assignmentsSearch]);
 
   const { data: modules } = useQuery({
     queryKey: ['modules-for-assign', selectedLine],
@@ -106,6 +118,49 @@ export default function AdminAssignments() {
       return [];
     },
     enabled: !!selectedUserRole && !!employeeId
+  });
+
+  // Get all available trainers for edit modal
+  const { data: allTrainers } = useQuery({
+    queryKey: ['all-trainers-for-edit'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, email, role')
+          .in('role', ['supervisor', 'manager', 'admin'])
+          .eq('is_active', true)
+          .order('first_name');
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching all trainers:', error);
+        return [];
+      }
+    }
+  });
+
+  // Get all available modules for edit modal
+  const { data: allModules } = useQuery({
+    queryKey: ['all-modules-for-edit'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('modules')
+          .select(`
+            id, title, version, line_id, category_id,
+            lines!inner(name),
+            categories!inner(name)
+          `)
+          .eq('is_active', true)
+          .order('title');
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching all modules:', error);
+        return [];
+      }
+    }
   });
 
   // Get all assignments with related data
@@ -217,6 +272,73 @@ export default function AdminAssignments() {
       setAssigning(false);
     }
   };
+
+  const handleEditAssignment = (assignment: any) => {
+    setEditingAssignment(assignment);
+    setIsEditModalOpen(true);
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+  };
+
+  const updateAssignment = async (assignmentId: string, updates: any) => {
+    try {
+      const { error } = await supabase
+        .from('assignments')
+        .update(updates)
+        .eq('id', assignmentId);
+      
+      if (error) throw error;
+      
+      setMessage('Assignment updated successfully');
+      setIsEditModalOpen(false);
+      setEditingAssignment(null);
+      
+      // Restore body scroll
+      document.body.style.overflow = 'unset';
+      
+      // Refresh the assignments data
+      window.location.reload(); // Simple refresh for now
+    } catch (e: any) {
+      setMessage(e?.message || 'Failed to update assignment');
+    }
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingAssignment(null);
+    // Restore body scroll
+    document.body.style.overflow = 'unset';
+  };
+
+  // Filter assignments based on search
+  const filteredAssignments = React.useMemo(() => {
+    if (!assignments || !debouncedAssignmentsSearch) return assignments || [];
+    
+    const searchLower = debouncedAssignmentsSearch.toLowerCase();
+    return assignments.filter((assignment: any) => {
+      const employeeName = `${assignment.assigned_to_user?.first_name || ''} ${assignment.assigned_to_user?.last_name || ''}`.toLowerCase();
+      const employeeEmail = assignment.assigned_to_user?.email?.toLowerCase() || '';
+      const moduleTitle = assignment.modules?.title?.toLowerCase() || '';
+      const lineName = assignment.modules?.lines?.name?.toLowerCase() || '';
+      const categoryName = assignment.modules?.categories?.name?.toLowerCase() || '';
+      const trainerName = `${assignment.trainer_user?.first_name || ''} ${assignment.trainer_user?.last_name || ''}`.toLowerCase();
+      const trainerEmail = assignment.trainer_user?.email?.toLowerCase() || '';
+      const assignedByName = `${assignment.assigned_by_user?.first_name || ''} ${assignment.assigned_by_user?.last_name || ''}`.toLowerCase();
+      const status = assignment.status?.toLowerCase() || '';
+      
+      return (
+        employeeName.includes(searchLower) ||
+        employeeEmail.includes(searchLower) ||
+        moduleTitle.includes(searchLower) ||
+        lineName.includes(searchLower) ||
+        categoryName.includes(searchLower) ||
+        trainerName.includes(searchLower) ||
+        trainerEmail.includes(searchLower) ||
+        assignedByName.includes(searchLower) ||
+        status.includes(searchLower)
+      );
+    });
+  }, [assignments, debouncedAssignmentsSearch]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -362,37 +484,46 @@ export default function AdminAssignments() {
               </Button>
               {message && <span className="text-sm text-gray-600">{message}</span>}
             </div>
-            
-            {/* Validation Message */}
-            {(!moduleId || !employeeId || !trainerId) && (
-              <div className="md:col-span-4 mt-2">
-                <div className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    <span className="font-medium">Please complete all required fields:</span>
-                  </div>
-                  <ul className="mt-2 ml-6 space-y-1 text-xs">
-                    {!selectedLine && <li>• Select a Production Line</li>}
-                    {!moduleId && <li>• Select a Module</li>}
-                    {!employeeId && <li>• Select a Trainee</li>}
-                    {!trainerId && <li>• Select a Trainer</li>}
-                  </ul>
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
 
         {/* Assigned Modules Section */}
         <Card className="shadow-md border-0 rounded-2xl">
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-blue-600" />
-              Assigned Modules
-              <Badge variant="secondary" className="ml-2">
-                {assignments?.length || 0} assignments
-              </Badge>
-            </CardTitle>
+            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+              <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-blue-600" />
+                Assigned Modules
+                <Badge variant="secondary" className="ml-2">
+                  {filteredAssignments?.length || 0} of {assignments?.length || 0} assignments
+                </Badge>
+              </CardTitle>
+              
+              {/* Search Input */}
+              <div className="w-full lg:w-80 relative">
+                <Input
+                  placeholder="Search assignments by employee, module, line, trainer..."
+                  value={assignmentsSearch}
+                  onChange={(e) => setAssignmentsSearch(e.target.value)}
+                  className="w-full pl-4 pr-10"
+                />
+                {assignmentsSearch !== debouncedAssignmentsSearch && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  </div>
+                )}
+                {assignmentsSearch && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setAssignmentsSearch('')}
+                    className="absolute right-8 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                  >
+                    ✕
+                  </Button>
+                )}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {assignments && assignments.length > 0 ? (
@@ -410,8 +541,12 @@ export default function AdminAssignments() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {assignments.map((assignment: any) => (
-                      <TableRow key={assignment.id}>
+                    {filteredAssignments.map((assignment: any) => (
+                      <TableRow 
+                        key={assignment.id}
+                        className="cursor-pointer hover:bg-gray-50 transition-colors"
+                        onClick={() => handleEditAssignment(assignment)}
+                      >
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4 text-gray-400" />
@@ -500,6 +635,21 @@ export default function AdminAssignments() {
                   </TableBody>
                 </Table>
               </div>
+            ) : filteredAssignments && filteredAssignments.length === 0 && assignments && assignments.length > 0 ? (
+              <div className="text-center py-8">
+                <BookOpen className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No assignments found</h3>
+                <p className="text-gray-500 mb-4">
+                  No assignments match your search for "{assignmentsSearch}"
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => setAssignmentsSearch('')}
+                  className="mt-2"
+                >
+                  Clear Search
+                </Button>
+              </div>
             ) : (
               <div className="text-center py-8">
                 <BookOpen className="h-12 w-12 mx-auto text-gray-300 mb-4" />
@@ -509,7 +659,206 @@ export default function AdminAssignments() {
             )}
           </CardContent>
         </Card>
+
+        {/* Edit Assignment Modal */}
+        {isEditModalOpen && editingAssignment && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" style={{ position: 'relative' }}>
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">Edit Assignment</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={closeEditModal}
+                  >
+                    ✕
+                  </Button>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Current Assignment Info */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-medium text-gray-900 mb-2">Current Assignment</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600">Employee:</span>
+                        <div className="font-medium">
+                          {editingAssignment.assigned_to_user?.first_name} {editingAssignment.assigned_to_user?.last_name}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Module:</span>
+                        <div className="font-medium">
+                          {editingAssignment.modules?.title} (v{editingAssignment.modules?.version})
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Line:</span>
+                        <div className="font-medium">{editingAssignment.modules?.lines?.name}</div>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Category:</span>
+                        <div className="font-medium">{editingAssignment.modules?.categories?.name}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Edit Form */}
+                  <EditAssignmentForm
+                    assignment={editingAssignment}
+                    onUpdate={updateAssignment}
+                    onCancel={closeEditModal}
+                    trainers={allTrainers || []}
+                    modules={allModules || []}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
+    </div>
+  );
+}
+
+// Edit Assignment Form Component
+function EditAssignmentForm({ assignment, onUpdate, onCancel, trainers, modules }: any) {
+  const [selectedTrainer, setSelectedTrainer] = React.useState(assignment.trainer_user_id || '');
+  const [selectedModule, setSelectedModule] = React.useState(assignment.module_id || '');
+  const [newDueDate, setNewDueDate] = React.useState(assignment.due_date ? assignment.due_date.split('T')[0] : '');
+  const [updating, setUpdating] = React.useState(false);
+
+  // Update state when assignment changes
+  React.useEffect(() => {
+    setSelectedTrainer(assignment.trainer_user_id || '');
+    setSelectedModule(assignment.module_id || '');
+    setNewDueDate(assignment.due_date ? assignment.due_date.split('T')[0] : '');
+  }, [assignment]);
+
+  const handleUpdate = async () => {
+    if (!selectedTrainer) {
+      alert('Please select a trainer');
+      return;
+    }
+
+    // Prevent self-assignment as both trainee and trainer
+    if (selectedTrainer === assignment.assigned_to) {
+      alert('Error: The trainee cannot be assigned as their own trainer.');
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      const updates: any = {
+        trainer_user_id: selectedTrainer
+      };
+
+      if (selectedModule !== assignment.module_id) {
+        updates.module_id = selectedModule;
+      }
+
+      if (newDueDate !== assignment.due_date) {
+        updates.due_date = newDueDate || null;
+      }
+
+      await onUpdate(assignment.id, updates);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1 block">
+            Trainer <span className="text-red-500">*</span>
+          </label>
+          <Select value={selectedTrainer} onValueChange={setSelectedTrainer}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder={selectedTrainer ? "Select Trainer" : "No trainer assigned"} />
+            </SelectTrigger>
+            <SelectContent className="z-[60]" position="popper" sideOffset={4}>
+              {trainers && trainers.length > 0 ? (
+                trainers.map((trainer: any) => (
+                  <SelectItem 
+                    key={trainer.id} 
+                    value={trainer.id}
+                    disabled={trainer.id === assignment.assigned_to}
+                  >
+                    {trainer.first_name} {trainer.last_name} • {trainer.email} ({trainer.role})
+                    {trainer.id === assignment.assigned_to && ' (Cannot train yourself)'}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="loading" disabled>
+                  Loading trainers...
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+          {trainers && trainers.length === 0 && (
+            <p className="text-xs text-red-500 mt-1">No trainers available</p>
+          )}
+          {selectedTrainer === assignment.assigned_to && (
+            <p className="text-xs text-amber-600 mt-1">
+              ⚠️ Cannot assign trainee as their own trainer
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1 block">
+            Module
+          </label>
+          <Select value={selectedModule} onValueChange={setSelectedModule}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select Module" />
+            </SelectTrigger>
+            <SelectContent className="z-[60]" position="popper" sideOffset={4}>
+              {modules && modules.length > 0 ? (
+                modules.map((module: any) => (
+                  <SelectItem key={module.id} value={module.id}>
+                    {module.title} (v{module.version}) - {module.lines?.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="loading" disabled>
+                  Loading modules...
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+          {modules && modules.length === 0 && (
+            <p className="text-xs text-red-500 mt-1">No modules available</p>
+          )}
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1 block">
+            Due Date
+          </label>
+          <Input
+            type="date"
+            value={newDueDate}
+            onChange={(e) => setNewDueDate(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 pt-4 border-t">
+        <Button
+          onClick={handleUpdate}
+          disabled={!selectedTrainer || updating}
+          className="flex-1"
+        >
+          {updating ? 'Updating...' : 'Update Assignment'}
+        </Button>
+        <Button variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
     </div>
   );
 }

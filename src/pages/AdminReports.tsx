@@ -192,6 +192,23 @@ export default function AdminReports() {
     }
   });
 
+  // Get all assignments for module coverage calculation
+  const { data: allAssignments } = useQuery({
+    queryKey: ['all-assignments-for-coverage'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('assignments')
+          .select('id, module_id, assigned_to, modules!inner(id, title)');
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching assignments:', error);
+        return [];
+      }
+    }
+  });
+
   // Step 5: Add all filtering
   const { data: employeeLogs, isLoading, error: queryError, refetch } = useQuery({
     queryKey: ['step5-all-filters', debouncedSearch, fromDate, toDate, selectedLine, selectedCategory, selectedModule],
@@ -342,8 +359,10 @@ export default function AdminReports() {
     const totalCompletions = data.length;
     const withTrainerSignoff = data.filter((row: any) => row.has_trainer_signoff).length;
     const pendingTrainerSignoff = data.length - withTrainerSignoff;
-    const uniqueEmployees = new Set(data.map((row: any) => row.employee)).size;
-    const uniqueModules = new Set(data.map((row: any) => row.module_title)).size;
+    
+    // For unique employees and modules, count from assignments (not just completions)
+    const uniqueEmployees = allAssignments ? new Set(allAssignments.map((a: any) => a.assigned_to)).size : 0;
+    const uniqueModules = allAssignments ? new Set(allAssignments.map((a: any) => a.module_id)).size : 0;
 
     return {
       totalCompletions,
@@ -352,7 +371,7 @@ export default function AdminReports() {
       uniqueEmployees,
       uniqueModules,
     };
-  }, [employeeLogs]);
+  }, [employeeLogs, allAssignments]);
 
   // Pagination logic for completions
   const paginatedCompletions = React.useMemo(() => {
@@ -440,23 +459,6 @@ export default function AdminReports() {
     }
   });
 
-  // Get all assignments for module coverage calculation
-  const { data: allAssignments } = useQuery({
-    queryKey: ['all-assignments-for-coverage'],
-    queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('assignments')
-          .select('id, module_id, modules!inner(id, title)');
-        if (error) throw error;
-        return data || [];
-      } catch (error) {
-        console.error('Error fetching assignments:', error);
-        return [];
-      }
-    }
-  });
-
   // NEW: Module coverage data for pie chart - module-based counting
   const moduleCoverageData = React.useMemo(() => {
     // If no assignments available, return empty data to prevent errors
@@ -538,6 +540,19 @@ export default function AdminReports() {
     inProgress: 'hsl(217 91% 60%)',  // Blue
     notStarted: 'hsl(0 84% 60%)'     // Destructive red
   };
+
+  // NEW: Employee coverage calculations
+  const employeeCoverageStats = React.useMemo(() => {
+    const totalEmployees = allActiveUsers?.length || 0;
+    const employeesWithTraining = allAssignments ? new Set(allAssignments.map((a: any) => a.assigned_to)).size : 0;
+    const coveragePercentage = totalEmployees > 0 ? Math.round((employeesWithTraining / totalEmployees) * 100) : 0;
+    
+    return {
+      totalEmployees,
+      employeesWithTraining,
+      coveragePercentage
+    };
+  }, [allActiveUsers, allAssignments]);
 
 
   const handleExportExcel = async () => {
@@ -777,7 +792,7 @@ export default function AdminReports() {
           <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-600">
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-              <span className="font-medium">🧾 Active Modules:</span>
+              <span className="font-medium">🧾 Assigned Trainees:</span>
               <span className="font-bold text-blue-700">{allAssignments?.length || 0}</span>
             </span>
             <span className="flex items-center gap-1">
@@ -840,6 +855,63 @@ export default function AdminReports() {
                 💪 Training in progress — keep up the momentum!
               </p>
             </div>
+          </Card>
+        </div>
+
+        {/* Employee Coverage Charts - Smaller rectangles */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* Total Employees */}
+          <Card className="shadow-md border-0">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Users className="h-5 w-5 text-blue-600" />
+                Total Employees
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center">
+                <div className="mt-8 text-6xl font-bold text-blue-800 mb-10">
+                  {employeeCoverageStats.totalEmployees}
+                </div>
+                <div className="text-sm text-gray-600 mb-2">
+                  Active employees in system
+                </div>
+                <div className="mt-3 text-xs text-gray-500">
+                  👥 Based on active user accounts
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Employee Coverage */}
+          <Card className="shadow-md border-0">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-green-600" />
+                Employee Coverage
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-green-800 mb-2">
+                  {employeeCoverageStats.coveragePercentage}%
+                </div>
+                <div className="text-sm text-gray-600 mb-2">
+                  {employeeCoverageStats.employeesWithTraining} of {employeeCoverageStats.totalEmployees} employees
+                </div>
+                <div className="text-xs text-gray-500">
+                  👥 Employees with assigned training
+                </div>
+                <div className="mt-3 bg-gray-50 rounded-lg p-3">
+                  <div className="text-xs text-gray-600 text-left">
+                    <div className="font-medium mb-1">Coverage Details:</div>
+                    <div>• Assignment Coverage = (Employees with Training ÷ Total Employees) × 100</div>
+                    <div>• Measures training program reach across workforce</div>
+                    <div>• Helps identify gaps in training distribution</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
           </Card>
         </div>
 
