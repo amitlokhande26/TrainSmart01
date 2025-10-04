@@ -5,7 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useQuery } from '@tanstack/react-query';
+import { CheckCircle, Clock, AlertCircle, Users, BookOpen, Calendar, User } from 'lucide-react';
 
 export default function AdminAssignments() {
   const [name, setName] = React.useState<string>('Admin');
@@ -103,6 +106,83 @@ export default function AdminAssignments() {
       return [];
     },
     enabled: !!selectedUserRole && !!employeeId
+  });
+
+  // Get all assignments with related data
+  const { data: assignments } = useQuery({
+    queryKey: ['assignments-with-details'],
+    queryFn: async () => {
+      try {
+        const { data: assignmentsData, error: assignmentsError } = await supabase
+          .from('assignments')
+          .select(`
+            id,
+            due_date,
+            assigned_at,
+            assigned_to,
+            assigned_by,
+            trainer_user_id,
+            module_id,
+            modules!inner(
+              id,
+              title,
+              version,
+              line_id,
+              category_id,
+              lines!inner(name),
+              categories!inner(name)
+            )
+          `)
+          .order('assigned_at', { ascending: false });
+
+        if (assignmentsError) throw assignmentsError;
+
+        // Get user details for assigned_to, assigned_by, and trainer_user_id
+        const userIds = new Set();
+        assignmentsData?.forEach(assignment => {
+          userIds.add(assignment.assigned_to);
+          userIds.add(assignment.assigned_by);
+          if (assignment.trainer_user_id) userIds.add(assignment.trainer_user_id);
+        });
+
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, email, role')
+          .in('id', Array.from(userIds));
+
+        // Get completion status
+        const { data: completionsData } = await supabase
+          .from('completions')
+          .select('id, assignment_id, completed_at');
+
+        // Get trainer signoffs
+        const { data: signoffsData } = await supabase
+          .from('trainer_signoffs')
+          .select('completion_id, signed_at');
+
+        // Combine all data
+        return assignmentsData?.map(assignment => {
+          const assignedToUser = usersData?.find(u => u.id === assignment.assigned_to);
+          const assignedByUser = usersData?.find(u => u.id === assignment.assigned_by);
+          const trainerUser = usersData?.find(u => u.id === assignment.trainer_user_id);
+          const completion = completionsData?.find(c => c.assignment_id === assignment.id);
+          const signoff = signoffsData?.find(s => s.completion_id === completion?.id);
+
+          return {
+            ...assignment,
+            assigned_to_user: assignedToUser,
+            assigned_by_user: assignedByUser,
+            trainer_user: trainerUser,
+            completion: completion,
+            signoff: signoff,
+            status: completion ? (signoff ? 'completed' : 'pending_signoff') : 'not_started'
+          };
+        }) || [];
+      } catch (error) {
+        console.error('Error fetching assignments:', error);
+        return [];
+      }
+    }
   });
 
   const assignModule = async () => {
@@ -270,6 +350,133 @@ export default function AdminAssignments() {
               </Button>
               {message && <span className="text-sm text-gray-600">{message}</span>}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Assigned Modules Section */}
+        <Card className="shadow-md border-0 rounded-2xl">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-blue-600" />
+              Assigned Modules
+              <Badge variant="secondary" className="ml-2">
+                {assignments?.length || 0} assignments
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {assignments && assignments.length > 0 ? (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Employee</TableHead>
+                      <TableHead>Module</TableHead>
+                      <TableHead>Line & Category</TableHead>
+                      <TableHead>Trainer</TableHead>
+                      <TableHead>Due Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Assigned By</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {assignments.map((assignment: any) => (
+                      <TableRow key={assignment.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-gray-400" />
+                            <div>
+                              <div className="font-medium">
+                                {assignment.assigned_to_user?.first_name} {assignment.assigned_to_user?.last_name}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {assignment.assigned_to_user?.email}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{assignment.modules?.title}</div>
+                            <div className="text-sm text-gray-500">v{assignment.modules?.version}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <Badge variant="outline" className="text-xs">
+                              {assignment.modules?.lines?.name}
+                            </Badge>
+                            <div className="text-xs text-gray-500">
+                              {assignment.modules?.categories?.name}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {assignment.trainer_user ? (
+                            <div>
+                              <div className="font-medium">
+                                {assignment.trainer_user.first_name} {assignment.trainer_user.last_name}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {assignment.trainer_user.email}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-sm">No trainer assigned</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {assignment.due_date ? (
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4 text-gray-400" />
+                              <span className="text-sm">
+                                {new Date(assignment.due_date).toLocaleDateString()}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-sm">No due date</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {assignment.status === 'completed' ? (
+                            <Badge className="bg-green-100 text-green-800 border-green-200">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Completed
+                            </Badge>
+                          ) : assignment.status === 'pending_signoff' ? (
+                            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                              <Clock className="h-3 w-3 mr-1" />
+                              Pending Sign-off
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-gray-100 text-gray-800 border-gray-200">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Not Started
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {assignment.assigned_by_user?.first_name} {assignment.assigned_by_user?.last_name}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {new Date(assignment.assigned_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <BookOpen className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No assignments yet</h3>
+                <p className="text-gray-500 mb-4">Create your first training assignment using the form above</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>
