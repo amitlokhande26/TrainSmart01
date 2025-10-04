@@ -470,7 +470,7 @@ export default function Supervisor() {
             >
               <CardContent className="flex items-center justify-between p-6">
                 <div>
-                  <h2 className="text-sm font-semibold text-gray-600">Completed</h2>
+                  <h2 className="text-sm font-semibold text-gray-600">Completed – Awaiting Sign-Off</h2>
                   <p className="text-3xl font-bold text-green-800">{myCompleted.length}</p>
                 </div>
                 <div className="bg-green-200 p-3 rounded-full">
@@ -582,7 +582,7 @@ export default function Supervisor() {
                   {activeFilter === 'all' && '🔰 My Training Modules'}
                   {activeFilter === 'assigned' && '📋 Assigned Training Modules'}
                   {activeFilter === 'inprogress' && '⏳ Training Modules In Progress'}
-                  {activeFilter === 'completed' && '✅ Completed Training Modules'}
+                  {activeFilter === 'completed' && '✅ Completed – Awaiting Sign-Off'}
                 </>
               )}
               {activeTab === 'trainersignoffs' && (
@@ -628,7 +628,7 @@ export default function Supervisor() {
                         {activeFilter === 'all' && 'No training modules assigned to you yet.'}
                         {activeFilter === 'assigned' && 'No assigned training modules.'}
                         {activeFilter === 'inprogress' && 'No training modules in progress.'}
-                        {activeFilter === 'completed' && 'No completed training modules.'}
+                        {activeFilter === 'completed' && 'No completed training modules awaiting sign-off.'}
                       </>
                     )}
                     {activeTab === 'trainersignoffs' && (
