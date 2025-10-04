@@ -224,6 +224,19 @@ export default function AdminAssignments() {
           const completion = completionsData?.find(c => c.assignment_id === assignment.id);
           const signoff = signoffsData?.find(s => s.completion_id === completion?.id);
 
+          // Determine display status based on database status, completion, and signoff
+          let displayStatus = assignment.status; // Start with database status
+          
+          if (completion && signoff) {
+            displayStatus = 'approved';
+          } else if (completion && !signoff) {
+            displayStatus = 'awaiting_signoff';
+          } else if (assignment.status === 'in_progress') {
+            displayStatus = 'in_progress';
+          } else if (assignment.status === 'assigned') {
+            displayStatus = 'not_started';
+          }
+
           return {
             ...assignment,
             assigned_to_user: assignedToUser,
@@ -231,7 +244,7 @@ export default function AdminAssignments() {
             trainer_user: trainerUser,
             completion: completion,
             signoff: signoff,
-            status: completion ? (signoff ? 'completed' : 'pending_signoff') : 'not_started'
+            displayStatus: displayStatus
           };
         }) || [];
       } catch (error) {
@@ -604,20 +617,20 @@ export default function AdminAssignments() {
                           )}
                         </TableCell>
                         <TableCell>
-                          {assignment.status === 'completed' ? (
+                          {assignment.displayStatus === 'approved' ? (
                             <Badge className="bg-green-100 text-green-800 border-green-200">
                               <CheckCircle className="h-3 w-3 mr-1" />
-                              Completed
+                              Approved
                             </Badge>
-                          ) : assignment.status === 'in_progress' ? (
+                          ) : assignment.displayStatus === 'awaiting_signoff' ? (
+                            <Badge className="bg-purple-100 text-purple-800 border-purple-200">
+                              <Clock className="h-3 w-3 mr-1" />
+                              Awaiting Sign-Off
+                            </Badge>
+                          ) : assignment.displayStatus === 'in_progress' ? (
                             <Badge className="bg-orange-100 text-orange-800 border-orange-200">
                               <Clock className="h-3 w-3 mr-1" />
                               In Progress
-                            </Badge>
-                          ) : assignment.status === 'assigned' ? (
-                            <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                              <AlertCircle className="h-3 w-3 mr-1" />
-                              Assigned
                             </Badge>
                           ) : (
                             <Badge className="bg-gray-100 text-gray-800 border-gray-200">
