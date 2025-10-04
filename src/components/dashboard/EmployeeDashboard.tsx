@@ -26,24 +26,50 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
   const { data: assignments = [], refetch } = useQuery({
     queryKey: ['my-assignments', userId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get assignments
+      const { data: assignmentsData, error: assignmentsError } = await supabase
         .from('assignments')
         .select(`
           id,status,due_date,trainer_user_id,
           module:modules(id,title,storage_path,type,version),
-          completion:completions(id,completed_at,signature:signatures(signed_name_snapshot,signed_email_snapshot,signed_at)),
-          trainer:users!assignments_trainer_user_id_fkey(id,first_name,last_name,email,role)
+          completion:completions(id,completed_at,signature:signatures(signed_name_snapshot,signed_email_snapshot,signed_at))
         `)
         .eq('assigned_to', userId as any)
         .order('assigned_at', { ascending: false });
-      if (error) {
-        console.error('EmployeeDashboard query error:', error);
-        throw error;
+      
+      if (assignmentsError) {
+        console.error('EmployeeDashboard assignments query error:', assignmentsError);
+        throw assignmentsError;
       }
-      console.log('EmployeeDashboard assignments data:', data);
-      console.log('First assignment trainer data:', data?.[0]?.trainer);
-      console.log('First assignment trainer_user_id:', data?.[0]?.trainer_user_id);
-      return (data || []) as any[];
+
+      // Get unique trainer IDs
+      const trainerIds = [...new Set(assignmentsData?.map(a => a.trainer_user_id).filter(Boolean) || [])];
+      
+      // Fetch trainer data separately
+      let trainers: any[] = [];
+      if (trainerIds.length > 0) {
+        const { data: trainersData, error: trainersError } = await supabase
+          .from('users')
+          .select('id,first_name,last_name,email,role')
+          .in('id', trainerIds);
+        
+        if (trainersError) {
+          console.error('EmployeeDashboard trainers query error:', trainersError);
+        } else {
+          trainers = trainersData || [];
+        }
+      }
+
+      // Combine the data
+      const result = assignmentsData?.map(assignment => ({
+        ...assignment,
+        trainer: trainers.find(t => t.id === assignment.trainer_user_id) || null
+      })) || [];
+
+      console.log('EmployeeDashboard assignments data:', result);
+      console.log('First assignment trainer data:', result?.[0]?.trainer);
+      console.log('First assignment trainer_user_id:', result?.[0]?.trainer_user_id);
+      return result;
     },
     enabled: !!userId,
   });
