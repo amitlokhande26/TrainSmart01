@@ -763,6 +763,11 @@ export default function AdminReports() {
                 </ResponsiveContainer>
               </div>
             </CardContent>
+            <div className="px-6 pb-4 text-center">
+              <p className="text-sm text-gray-600 font-medium">
+                💪 Training in progress — keep up the momentum!
+              </p>
+            </div>
           </Card>
         </div>
 
