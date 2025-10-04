@@ -408,22 +408,29 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
                               
                               // If status is 'assigned', update it to 'in_progress' when user opens
                               if (a.status === 'assigned') {
+                                console.log('Updating assignment status from assigned to in_progress...');
                                 try {
-                                  const { error } = await supabase
+                                  const { data, error } = await supabase
                                     .from('assignments')
                                     .update({ status: 'in_progress' })
-                                    .eq('id', a.id);
+                                    .eq('id', a.id)
+                                    .select();
+                                  
+                                  console.log('Update result:', { data, error });
                                   
                                   if (error) {
                                     console.error('Error updating assignment status:', error);
                                   } else {
-                                    console.log('Assignment status updated to in_progress');
+                                    console.log('Assignment status updated to in_progress successfully');
                                     // Refetch data to update the UI
-                                    refetch();
+                                    await refetch();
+                                    console.log('Data refetched after status update');
                                   }
                                 } catch (err) {
                                   console.error('Error updating assignment status:', err);
                                 }
+                              } else {
+                                console.log('Assignment status is not assigned, skipping status update. Current status:', a.status);
                               }
                               
                               openAssignmentMaterial(a);
