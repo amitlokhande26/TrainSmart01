@@ -15,13 +15,28 @@ export function TrainSmartApp() {
   }>({ type: null, name: '' });
   const [session, setSession] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
 
   useEffect(() => {
     const deriveUserFromSession = async (session: any | null) => {
       if (!session?.user) {
         setUser({ type: null, name: '' });
+        setNeedsPasswordReset(false);
         return;
       }
+      
+      // Check if user needs password reset
+      const needsPasswordReset = (session.user.app_metadata as any)?.needs_password_reset;
+      console.log('🔍 TrainSmartApp: needsPasswordReset =', needsPasswordReset);
+      
+      if (needsPasswordReset) {
+        console.log('🔍 TrainSmartApp: User needs password reset, keeping LoginForm visible');
+        setNeedsPasswordReset(true);
+        setUser({ type: null, name: '' }); // Keep user as null so LoginForm stays visible
+        return;
+      }
+      
+      setNeedsPasswordReset(false);
       const role: string | undefined = (session.user.app_metadata as any)?.role || (session.user.user_metadata as any)?.role;
       const email = session.user.email || '';
       // Try to get first_name and last_name from the users table
@@ -82,7 +97,7 @@ export function TrainSmartApp() {
     );
   }
 
-  if (!user.type) {
+  if (!user.type || needsPasswordReset) {
     return <LoginForm onLogin={handleLogin} />;
   }
 

@@ -23,6 +23,14 @@ export default function AdminUsers() {
   const [supervisorEmail, setSupervisorEmail] = React.useState('');
   const [creatingSupervisor, setCreatingSupervisor] = React.useState(false);
   const [supervisorMessage, setSupervisorMessage] = React.useState<string | null>(null);
+  
+  // Manager creation state
+  const [managerFirstName, setManagerFirstName] = React.useState('');
+  const [managerLastName, setManagerLastName] = React.useState('');
+  const [managerEmail, setManagerEmail] = React.useState('');
+  const [managerPassword, setManagerPassword] = React.useState('');
+  const [creatingManager, setCreatingManager] = React.useState(false);
+  const [managerMessage, setManagerMessage] = React.useState<string | null>(null);
 
   // Search functionality
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -152,14 +160,52 @@ export default function AdminUsers() {
     }
   };
 
-  const resetSupervisorPassword = async (email: string) => {
+  const createManager = async () => {
+    if (!managerFirstName || !managerLastName || !managerEmail) return;
+    setCreatingManager(true);
+    setManagerMessage(null);
     try {
-      const { data, error } = await supabase.functions.invoke('reset_supervisor_password', {
-        body: { email, new_password: 'SuperTrain1*' }
+      const payload: any = { 
+        first_name: managerFirstName, 
+        last_name: managerLastName, 
+        email: managerEmail 
+      };
+      
+      // Only include custom password if provided
+      if (managerPassword.trim()) {
+        payload.custom_password = managerPassword;
+      }
+      
+      const { data, error } = await supabase.functions.invoke('create_manager_user', {
+        body: payload
       });
       if (error) throw error;
-      alert(`Password reset for ${email}. New password: SuperTrain1*`);
-      await refetchSupervisors();
+      
+      const message = data.message || `Created manager ${managerEmail}`;
+      setManagerMessage(message);
+      setManagerFirstName(''); 
+      setManagerLastName(''); 
+      setManagerEmail(''); 
+      setManagerPassword('');
+      await refetchAllUsers();
+    } catch (e: any) {
+      setManagerMessage(e?.message || 'Failed to create manager');
+    } finally {
+      setCreatingManager(false);
+    }
+  };
+
+
+  const resetManagerPassword = async (email: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('reset_manager_password', {
+        body: { email } // No custom password, will generate random one
+      });
+      if (error) throw error;
+      
+      const message = data.message || `Password reset for ${email}. New password: ${data.new_password}`;
+      alert(message);
+      await refetchAllUsers();
     } catch (e: any) {
       alert(`Failed to reset password: ${e?.message || 'Unknown error'}`);
     }
@@ -271,6 +317,63 @@ export default function AdminUsers() {
               )}
             </CardContent>
           </Card>
+
+          {/* Create Manager */}
+          <Card className="border-purple-200 bg-purple-50/30">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-purple-900">
+                <span className="text-xl">👔</span>
+                Create Manager
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3">
+                <Input 
+                  placeholder="First name" 
+                  value={managerFirstName} 
+                  onChange={(e) => setManagerFirstName(e.target.value)}
+                  className="border-purple-200 focus:border-purple-400"
+                />
+                <Input 
+                  placeholder="Last name" 
+                  value={managerLastName} 
+                  onChange={(e) => setManagerLastName(e.target.value)}
+                  className="border-purple-200 focus:border-purple-400"
+                />
+                <Input 
+                  type="email" 
+                  placeholder="email@company.com" 
+                  value={managerEmail} 
+                  onChange={(e) => setManagerEmail(e.target.value)}
+                  className="border-purple-200 focus:border-purple-400"
+                />
+                <Input 
+                  type="password" 
+                  placeholder="Custom password (optional - leave blank for auto-generated)" 
+                  value={managerPassword} 
+                  onChange={(e) => setManagerPassword(e.target.value)}
+                  className="border-purple-200 focus:border-purple-400"
+                />
+              </div>
+              <Button 
+                onClick={createManager} 
+                disabled={creatingManager || !managerFirstName || !managerLastName || !managerEmail}
+                className="w-full bg-purple-600 hover:bg-purple-700"
+              >
+                {creatingManager ? 'Creating...' : 'Create Manager'}
+              </Button>
+              {managerMessage && (
+                <div className={`text-sm p-3 rounded-md ${
+                  managerMessage.includes('Created') || managerMessage.includes('successfully')
+                    ? 'bg-green-100 text-green-800 border border-green-200' 
+                    : 'bg-red-100 text-red-800 border border-red-200'
+                }`}>
+                  {managerMessage}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
         </div>
 
         {/* Search and Filter Section */}
@@ -379,12 +482,12 @@ export default function AdminUsers() {
                         {u.is_active ? '✓ Active' : '✗ Inactive'}
                       </div>
                     </div>
-                    {u.role === 'supervisor' && (
+                    {u.role === 'manager' && (
                       <Button 
                         size="sm" 
                         variant="outline"
-                        onClick={() => resetSupervisorPassword(u.email)}
-                        className="text-xs border-gray-300 hover:bg-gray-50"
+                        onClick={() => resetManagerPassword(u.email)}
+                        className="text-xs border-purple-300 hover:bg-purple-50 text-purple-700"
                       >
                         Reset Password
                       </Button>

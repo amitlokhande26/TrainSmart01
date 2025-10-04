@@ -355,11 +355,12 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
                             <span className="font-medium">Completed:</span> {a?.completion?.completed_at ? new Date(a.completion.completed_at).toLocaleString() : '—'}
                           </div>
                         )}
-                        {requiresTrainer && (
-                          <div className="text-sm text-gray-600 mb-3">
-                            <span className="font-medium">Trainer:</span> {a.trainer?.first_name} {a.trainer?.last_name} • {a.trainer?.email}
-                          </div>
-                        )}
+                        <div className="text-sm text-gray-800 mb-3">
+                          <span className="font-medium">Trainer:</span>{' '}
+                          {a.trainer?.id
+                            ? <>{a.trainer?.first_name} {a.trainer?.last_name} • {a.trainer?.email}</>
+                            : 'Not assigned'}
+                        </div>
                         <div className="flex items-center gap-3">
                           <Badge
                             variant={badgeVariant}
