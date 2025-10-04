@@ -527,14 +527,14 @@ export default function AdminReports() {
     ];
   }, [employeeLogs, allAssignments]);
 
-  // NEW: Chart colors using app's brand colors
+  // NEW: Chart colors using professional color scheme
   const chartColors = {
     completions: 'hsl(217 91% 60%)', // Secondary blue
     signoffs: 'hsl(142 76% 36%)',    // Success green
-    signedOff: 'hsl(142 76% 36%)',   // Success green
-    completed: 'hsl(35 91% 62%)',    // Warning orange
-    inProgress: 'hsl(217 91% 60%)',  // Blue
-    notStarted: 'hsl(0 84% 60%)'     // Destructive red
+    signedOff: '#22C55E',            // Green - Signed-off/Approved
+    awaitingSignoff: '#F59E0B',      // Amber/Orange - Awaiting Sign-Off
+    inProgress: '#3B82F6',           // Blue - In Progress
+    notStarted: '#9CA3AF'            // Cool Gray - Not Started
   };
 
   // NEW: Employee coverage calculations
@@ -787,24 +787,29 @@ export default function AdminReports() {
         <div className="px-6 pb-4">
           <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-600">
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+              <span className="w-2 h-2 rounded-full" style={{backgroundColor: '#334155'}}></span>
               <span className="font-medium">🧾 Assigned Trainees:</span>
-              <span className="font-bold text-blue-700">{allAssignments?.length || 0}</span>
+              <span className="font-bold" style={{color: '#334155'}}>{allAssignments?.length || 0}</span>
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+              <span className="w-2 h-2 rounded-full" style={{backgroundColor: '#9CA3AF'}}></span>
               <span className="font-medium">Not Started:</span>
-              <span className="font-bold text-red-700">{moduleCoverageData.find(d => d.name === "Not Started")?.value || 0}</span>
+              <span className="font-bold" style={{color: '#9CA3AF'}}>{moduleCoverageData.find(d => d.name === "Not Started")?.value || 0}</span>
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
-              <span className="font-medium">Completed:</span>
-              <span className="font-bold text-yellow-700">{moduleCoverageData.find(d => d.name === "Completed")?.value || 0}</span>
+              <span className="w-2 h-2 rounded-full" style={{backgroundColor: '#3B82F6'}}></span>
+              <span className="font-medium">In Progress:</span>
+              <span className="font-bold" style={{color: '#3B82F6'}}>{moduleCoverageData.find(d => d.name === "In Progress")?.value || 0}</span>
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+              <span className="w-2 h-2 rounded-full" style={{backgroundColor: '#F59E0B'}}></span>
+              <span className="font-medium">Awaiting Sign-Off:</span>
+              <span className="font-bold" style={{color: '#F59E0B'}}>{moduleCoverageData.find(d => d.name === "Awaiting Sign-Off")?.value || 0}</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full" style={{backgroundColor: '#22C55E'}}></span>
               <span className="font-medium">Signed-off:</span>
-              <span className="font-bold text-green-700">{moduleCoverageData.find(d => d.name === "Signed-off")?.value || 0}</span>
+              <span className="font-bold" style={{color: '#22C55E'}}>{moduleCoverageData.find(d => d.name === "Approved")?.value || 0}</span>
             </span>
           </div>
         </div>
@@ -833,8 +838,8 @@ export default function AdminReports() {
                         <Cell 
                           key={`cell-${index}`} 
                           fill={
-                            entry.name === "Signed-off" ? chartColors.signedOff :
-                            entry.name === "Completed" ? chartColors.completed :
+                            entry.name === "Approved" ? chartColors.signedOff :
+                            entry.name === "Awaiting Sign-Off" ? chartColors.awaitingSignoff :
                             entry.name === "In Progress" ? chartColors.inProgress :
                             chartColors.notStarted
                           } 
