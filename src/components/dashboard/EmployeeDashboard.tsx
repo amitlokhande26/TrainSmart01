@@ -32,11 +32,13 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
           id,status,due_date,
           module:modules(id,title,storage_path,type,version),
           completion:completions(id,completed_at,signature:signatures(signed_name_snapshot,signed_email_snapshot,signed_at)),
-          trainer:users!assignments_trainer_user_id_fkey(id,first_name,last_name,email,role)
+          trainer_user_id,
+          trainer:users!trainer_user_id(id,first_name,last_name,email,role)
         `)
         .eq('assigned_to', userId as any)
         .order('assigned_at', { ascending: false });
       if (error) throw error;
+      console.log('EmployeeDashboard assignments data:', data);
       return (data || []) as any[];
     },
     enabled: !!userId,
@@ -357,9 +359,12 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
                         )}
                         <div className="text-sm text-gray-800 mb-3">
                           <span className="font-medium">Trainer:</span>{' '}
-                          {a.trainer?.id
-                            ? <>{a.trainer?.first_name} {a.trainer?.last_name} • {a.trainer?.email}</>
-                            : 'Not assigned'}
+                          {(() => {
+                            console.log('Assignment trainer data:', a.trainer, 'trainer_user_id:', a.trainer_user_id);
+                            return a.trainer?.id
+                              ? <>{a.trainer?.first_name} {a.trainer?.last_name} • {a.trainer?.email}</>
+                              : 'Not assigned';
+                          })()}
                         </div>
                         <div className="flex items-center gap-3">
                           <Badge

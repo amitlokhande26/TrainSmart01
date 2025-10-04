@@ -79,7 +79,8 @@ export default function AdminEmployeeDetail() {
         .select(`
           id,status,due_date,assigned_at,
           module:modules(id,title,version),
-          trainer:users!assignments_trainer_user_id_fkey(id,first_name,last_name,email,role),
+          trainer_user_id,
+          trainer:users!trainer_user_id(id,first_name,last_name,email,role),
           completion:completions(
             id,completed_at,
             signature:signatures(signed_name_snapshot,signed_email_snapshot,signed_at),
