@@ -185,13 +185,13 @@ export default function Supervisor() {
   
   // Categorize trainee assignments (My Trainings)
   const myAssigned = traineeAssignments.filter(a => a.status === 'assigned');
-  const myInProgress = traineeAssignments.filter(a => a.status === 'in_progress' && !a.isCompleted);
-  const myCompleted = traineeAssignments.filter(a => a.isCompleted && !a.signoff?.id);
-  const myApproved = traineeAssignments.filter(a => a.isCompleted && a.signoff?.id);
+  const myInProgress = traineeAssignments.filter(a => a.status === 'in_progress' && !a.completion?.id);
+  const myCompleted = traineeAssignments.filter(a => a.completion?.id && !a.signoff?.id);
+  const myApproved = traineeAssignments.filter(a => a.completion?.id && a.signoff?.id);
   
   // Categorize trainer assignments (Trainer Sign-offs)
-  const pendingSignoffs = trainerAssignments.filter(a => a.needsSignoff);
-  const approvedSignoffs = trainerAssignments.filter(a => a.isCompleted);
+  const pendingSignoffs = trainerAssignments.filter(a => a.completion?.id && !a.signoff?.id);
+  const approvedSignoffs = trainerAssignments.filter(a => a.completion?.id && a.signoff?.id);
   const allTrainerAssignments = trainerAssignments;
   
 
