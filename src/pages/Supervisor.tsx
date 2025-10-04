@@ -582,7 +582,7 @@ export default function Supervisor() {
                       <div className="flex items-center gap-2">
                         <Badge variant={badgeVariant}>{statusLabel}</Badge>
                         <Button variant="outline" onClick={() => openAssignmentMaterial(a)}>Open</Button>
-                        {a.isTrainee && !hasCompletion && (
+                        {a.isTrainee && !hasCompletion && a.status === 'in_progress' && (
                           <Button onClick={() => { setPendingAssignment(a); setConfirmOpen(true); }}>Mark Complete</Button>
                         )}
                         {a.isTrainer && activeFilter === 'signoffs' && needsSignoff && (
