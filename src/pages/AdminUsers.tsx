@@ -453,11 +453,16 @@ export default function AdminUsers() {
               {allUsers?.map((u: any) => (
                 <div key={u.id} className="border border-gray-200 rounded-lg p-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
                   <div 
-                    className="flex-1 cursor-pointer" 
-                    onClick={() => u.role === 'employee' ? navigate(`/admin/users/${u.id}`) : null}
+                    className={`flex-1 ${u.role !== 'admin' ? 'cursor-pointer hover:bg-gray-50/30 rounded-lg p-2 -m-2' : ''}`}
+                    onClick={() => u.role !== 'admin' ? navigate(`/admin/users/${u.id}`) : null}
                   >
                     <div className="font-semibold text-gray-900">{u.first_name} {u.last_name}</div>
                     <div className="text-sm text-gray-600">{u.email}</div>
+                    {u.role !== 'admin' && (
+                      <div className="text-xs text-gray-400 mt-1">
+                        Click to edit user details
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="flex flex-col items-end gap-1">
@@ -482,6 +487,23 @@ export default function AdminUsers() {
                         {u.is_active ? '✓ Active' : '✗ Inactive'}
                       </div>
                     </div>
+                    {/* Edit button for Supervisor and Manager */}
+                    {(u.role === 'supervisor' || u.role === 'manager') && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => navigate(`/admin/users/${u.id}`)}
+                        className={`text-xs ${
+                          u.role === 'supervisor' 
+                            ? 'border-green-300 hover:bg-green-50 text-green-700'
+                            : 'border-purple-300 hover:bg-purple-50 text-purple-700'
+                        }`}
+                      >
+                        Edit
+                      </Button>
+                    )}
+                    
+                    {/* Reset Password button for Manager only */}
                     {u.role === 'manager' && (
                       <Button 
                         size="sm" 
