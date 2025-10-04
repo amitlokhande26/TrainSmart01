@@ -374,8 +374,29 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
                           </Badge>
                           <Button 
                             variant="outline" 
-                            onClick={() => {
+                            onClick={async () => {
                               console.log('Open button clicked for assignment:', a.id, 'Status:', a.status);
+                              
+                              // If status is 'assigned', update it to 'in_progress' when user opens
+                              if (a.status === 'assigned') {
+                                try {
+                                  const { error } = await supabase
+                                    .from('assignments')
+                                    .update({ status: 'in_progress' })
+                                    .eq('id', a.id);
+                                  
+                                  if (error) {
+                                    console.error('Error updating assignment status:', error);
+                                  } else {
+                                    console.log('Assignment status updated to in_progress');
+                                    // Refetch data to update the UI
+                                    refetch();
+                                  }
+                                } catch (err) {
+                                  console.error('Error updating assignment status:', err);
+                                }
+                              }
+                              
                               openAssignmentMaterial(a);
                             }}
                             className="bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 border-blue-200 text-blue-700 hover:text-blue-800 transition-all duration-200"
@@ -385,7 +406,7 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
                             </svg>
                             Open
                           </Button>
-                          {!hasEmployeeCompletion && (
+                          {!hasEmployeeCompletion && a.status === 'in_progress' && (
                             <Button 
                               onClick={() => { setPendingAssignment(a); setConfirmOpen(true); }}
                               className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-medium transition-all duration-200 shadow-md hover:shadow-lg"
