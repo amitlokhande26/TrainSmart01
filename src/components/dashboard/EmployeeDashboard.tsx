@@ -66,9 +66,6 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
         trainer: trainers.find(t => t.id === assignment.trainer_user_id) || null
       })) || [];
 
-      console.log('EmployeeDashboard assignments data:', result);
-      console.log('First assignment trainer data:', result?.[0]?.trainer);
-      console.log('First assignment trainer_user_id:', result?.[0]?.trainer_user_id);
       return result;
     },
     enabled: !!userId,
@@ -389,12 +386,9 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
                         )}
                         <div className="text-sm text-gray-800 mb-3">
                           <span className="font-medium">Trainer:</span>{' '}
-                          {(() => {
-                            console.log('Assignment trainer data:', a.trainer, 'trainer_user_id:', a.trainer_user_id);
-                            return a.trainer?.id
-                              ? <>{a.trainer?.first_name} {a.trainer?.last_name} • {a.trainer?.email}</>
-                              : 'Not assigned';
-                          })()}
+                          {a.trainer?.id
+                            ? <>{a.trainer?.first_name} {a.trainer?.last_name} • {a.trainer?.email}</>
+                            : 'Not assigned'}
                         </div>
                         <div className="flex items-center gap-3">
                           <Badge
