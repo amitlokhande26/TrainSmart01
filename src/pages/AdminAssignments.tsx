@@ -127,7 +127,12 @@ export default function AdminAssignments() {
       if (error) throw error;
       setMessage('Assigned successfully');
     } catch (e: any) {
-      setMessage(e?.message || 'Failed to assign');
+      // Check for duplicate assignment error and show friendly message
+      if (e?.message?.includes('duplicate key value violates unique constraint "assignments_module_id_assigned_to_key"')) {
+        setMessage('🤔 Hey, they\'ve already got this training. Wanna pick another?');
+      } else {
+        setMessage(e?.message || 'Failed to assign');
+      }
     } finally {
       setAssigning(false);
     }
