@@ -420,18 +420,18 @@ export default function Supervisor() {
             <Card 
               className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
                 activeFilter === 'assigned' 
-                  ? 'bg-gradient-to-r from-blue-100 to-blue-200 ring-2 ring-blue-500' 
-                  : 'bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200'
+                  ? 'bg-gradient-to-r from-slate-100 to-slate-200 ring-2 ring-slate-500' 
+                  : 'bg-gradient-to-r from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-200'
               }`}
               onClick={() => setActiveFilter('assigned')}
             >
               <CardContent className="flex items-center justify-between p-6">
                 <div>
                   <h2 className="text-sm font-semibold text-gray-600">Assigned</h2>
-                  <p className="text-3xl font-bold text-blue-800">{myAssigned.length}</p>
+                  <p className="text-3xl font-bold text-slate-800">{myAssigned.length}</p>
                 </div>
-                <div className="bg-blue-200 p-3 rounded-full">
-                  <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-slate-200 p-3 rounded-full">
+                  <svg className="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
@@ -442,18 +442,18 @@ export default function Supervisor() {
             <Card 
               className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
                 activeFilter === 'inprogress' 
-                  ? 'bg-gradient-to-r from-orange-100 to-orange-200 ring-2 ring-orange-500' 
-                  : 'bg-gradient-to-r from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200'
+                  ? 'bg-gradient-to-r from-amber-100 to-amber-200 ring-2 ring-amber-500' 
+                  : 'bg-gradient-to-r from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200'
               }`}
               onClick={() => setActiveFilter('inprogress')}
             >
               <CardContent className="flex items-center justify-between p-6">
                 <div>
                   <h2 className="text-sm font-semibold text-gray-600">In Progress</h2>
-                  <p className="text-3xl font-bold text-orange-800">{myInProgress.length}</p>
+                  <p className="text-3xl font-bold text-amber-800">{myInProgress.length}</p>
                 </div>
-                <div className="bg-orange-200 p-3 rounded-full">
-                  <svg className="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-amber-200 p-3 rounded-full">
+                  <svg className="h-6 w-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -464,8 +464,8 @@ export default function Supervisor() {
             <Card 
               className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
                 activeFilter === 'completed' 
-                  ? 'bg-gradient-to-r from-green-100 to-green-200 ring-2 ring-green-500' 
-                  : 'bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200'
+                  ? 'bg-gradient-to-r from-purple-100 to-purple-200 ring-2 ring-purple-500' 
+                  : 'bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200'
               }`}
               onClick={() => setActiveFilter('completed')}
             >
@@ -475,10 +475,10 @@ export default function Supervisor() {
                     Completed:
                     Awaiting Sign Off
                   </h2>
-                  <p className="text-3xl font-bold text-green-800">{myCompleted.length}</p>
+                  <p className="text-3xl font-bold text-purple-800">{myCompleted.length}</p>
                 </div>
-                <div className="bg-green-200 p-3 rounded-full">
-                  <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-purple-200 p-3 rounded-full">
+                  <svg className="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -489,18 +489,18 @@ export default function Supervisor() {
             <Card 
               className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
                 activeFilter === 'approved' 
-                  ? 'bg-gradient-to-r from-emerald-100 to-emerald-200 ring-2 ring-emerald-500' 
-                  : 'bg-gradient-to-r from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-200'
+                  ? 'bg-gradient-to-r from-green-100 to-green-200 ring-2 ring-green-500' 
+                  : 'bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200'
               }`}
               onClick={() => setActiveFilter('approved')}
             >
               <CardContent className="flex items-center justify-between p-6">
                 <div>
                   <h2 className="text-sm font-semibold text-gray-600">Approved</h2>
-                  <p className="text-3xl font-bold text-emerald-800">{myApproved.length}</p>
+                  <p className="text-3xl font-bold text-green-800">{myApproved.length}</p>
                 </div>
-                <div className="bg-emerald-200 p-3 rounded-full">
-                  <svg className="h-6 w-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-green-200 p-3 rounded-full">
+                  <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
