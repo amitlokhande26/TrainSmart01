@@ -459,8 +459,8 @@ export default function AdminReports() {
 
   // NEW: Module coverage data for pie chart - module-based counting
   const moduleCoverageData = React.useMemo(() => {
-    // If no data available, return empty data to prevent errors
-    if (!employeeLogs || employeeLogs.length === 0 || !allAssignments || allAssignments.length === 0) {
+    // If no assignments available, return empty data to prevent errors
+    if (!allAssignments || allAssignments.length === 0) {
       return [
         { name: "Signed-off", value: 0, percentage: 0 },
         { name: "Completed", value: 0, percentage: 0 },
@@ -485,18 +485,20 @@ export default function AdminReports() {
     });
     
     // Update module status based on employeeLogs data
-    employeeLogs.forEach((row: any) => {
-      // Find the assignment for this completion
-      const assignment = allAssignments.find(a => a.id === row.assignment_id);
-      if (assignment && moduleStatusMap.has(assignment.module_id)) {
-        const module = moduleStatusMap.get(assignment.module_id);
-        module.hasStarted = true;
-        module.hasCompletions = true;
-        if (row.has_trainer_signoff) {
-          module.hasSignoffs = true;
+    if (employeeLogs && employeeLogs.length > 0) {
+      employeeLogs.forEach((row: any) => {
+        // Find the assignment for this completion
+        const assignment = allAssignments.find(a => a.id === row.assignment_id);
+        if (assignment && moduleStatusMap.has(assignment.module_id)) {
+          const module = moduleStatusMap.get(assignment.module_id);
+          module.hasStarted = true;
+          module.hasCompletions = true;
+          if (row.has_trainer_signoff) {
+            module.hasSignoffs = true;
+          }
         }
-      }
-    });
+      });
+    }
     
     // Calculate module status categories
     const allModules = Array.from(moduleStatusMap.values());
@@ -506,6 +508,18 @@ export default function AdminReports() {
     const completed = allModules.filter(module => module.hasCompletions && !module.hasSignoffs).length;
     const inProgress = allModules.filter(module => module.hasStarted && !module.hasCompletions).length;
     const notStarted = allModules.filter(module => !module.hasStarted).length;
+    
+    // Debug logging
+    console.log('📊 Module Coverage Debug:', {
+      totalModules,
+      allAssignments: allAssignments?.length,
+      employeeLogs: employeeLogs?.length,
+      signedOff,
+      completed,
+      inProgress,
+      notStarted,
+      moduleStatusMap: Array.from(moduleStatusMap.entries())
+    });
     
     return [
       { name: "Signed-off", value: signedOff, percentage: Math.round((signedOff / totalModules) * 100) },
