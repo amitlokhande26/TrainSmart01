@@ -353,7 +353,7 @@ export default function AdminReports() {
     refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
   });
 
-  // Calculate summary statistics
+  // Calculate summary statistics with reimagined KPIs
   const summaryStats = React.useMemo(() => {
     const data = employeeLogs || [];
     const totalCompletions = data.length;
@@ -363,6 +363,11 @@ export default function AdminReports() {
     // For unique employees and modules, count from assignments (not just completions)
     const uniqueEmployees = allAssignments ? new Set(allAssignments.map((a: any) => a.assigned_to)).size : 0;
     const uniqueModules = allAssignments ? new Set(allAssignments.map((a: any) => a.module_id)).size : 0;
+    
+    // Calculate new KPI metrics
+    const totalAssignments = allAssignments?.length || 0;
+    const completionRate = totalAssignments > 0 ? Math.round((totalCompletions / totalAssignments) * 100) : 0;
+    const signoffRate = totalCompletions > 0 ? Math.round((withTrainerSignoff / totalCompletions) * 100) : 0;
 
     return {
       totalCompletions,
@@ -370,6 +375,9 @@ export default function AdminReports() {
       pendingTrainerSignoff,
       uniqueEmployees,
       uniqueModules,
+      completionRate,
+      signoffRate,
+      totalAssignments,
     };
   }, [employeeLogs, allAssignments]);
 
@@ -698,56 +706,135 @@ export default function AdminReports() {
           
         </div>
 
-        {/* Enhanced KPI Cards */}
+        {/* Reimagined KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-lg transition-all duration-300 border-0 shadow-md">
+          {/* Training Completion Rate */}
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-lg transition-all duration-300 border-0 shadow-md relative">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-semibold text-gray-600">Total Completions</CardTitle>
+              <CardTitle className="text-sm font-semibold text-gray-600">📊 Training Completion Rate</CardTitle>
               <CheckCircle className="h-5 w-5 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-800">{summaryStats.totalCompletions}</div>
+              <div className="text-2xl font-bold text-blue-800">{summaryStats.completionRate}%</div>
+              <div className="text-xs text-gray-500 mt-1">{summaryStats.totalCompletions} of {summaryStats.totalAssignments} completed</div>
             </CardContent>
+            <div className="absolute bottom-2 right-2">
+              <div className="group relative">
+                <svg className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                </svg>
+                <div className="absolute bottom-6 right-0 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                  <div className="font-semibold mb-1">Training Completion Rate</div>
+                  <div className="mb-2">Percentage of all assigned trainings that are completed (with or without sign-off).</div>
+                  <div className="mb-1"><strong>Formula:</strong></div>
+                  <div className="mb-2">(Total Completions / Total Assignments) × 100</div>
+                  <div className="mb-1"><strong>Purpose:</strong></div>
+                  <div>Shows overall training progress efficiency — instantly tells how far the team has progressed.</div>
+                </div>
+              </div>
+            </div>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 hover:shadow-lg transition-all duration-300 border-0 shadow-md">
+          {/* Sign-off Rate */}
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 hover:shadow-lg transition-all duration-300 border-0 shadow-md relative">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-semibold text-gray-600">With Sign-offs</CardTitle>
+              <CardTitle className="text-sm font-semibold text-gray-600">✅ Sign-off Rate</CardTitle>
               <CheckCircle className="h-5 w-5 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-800">{summaryStats.withTrainerSignoff}</div>
+              <div className="text-2xl font-bold text-green-800">{summaryStats.signoffRate}%</div>
+              <div className="text-xs text-gray-500 mt-1">{summaryStats.withTrainerSignoff} of {summaryStats.totalCompletions} signed off</div>
             </CardContent>
+            <div className="absolute bottom-2 right-2">
+              <div className="group relative">
+                <svg className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                </svg>
+                <div className="absolute bottom-6 right-0 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                  <div className="font-semibold mb-1">Sign-off Rate</div>
+                  <div className="mb-2">How many completed trainings have been approved by trainers.</div>
+                  <div className="mb-1"><strong>Formula:</strong></div>
+                  <div className="mb-2">(With Sign-Offs / Total Completions) × 100</div>
+                  <div className="mb-1"><strong>Purpose:</strong></div>
+                  <div>Shows how quickly trainers are verifying completed trainings (trainer responsiveness).</div>
+                </div>
+              </div>
+            </div>
           </Card>
 
-          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 hover:shadow-lg transition-all duration-300 border-0 shadow-md">
+          {/* Pending Approvals */}
+          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 hover:shadow-lg transition-all duration-300 border-0 shadow-md relative">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-semibold text-gray-600">Pending Sign-offs</CardTitle>
+              <CardTitle className="text-sm font-semibold text-gray-600">⏳ Pending Approvals</CardTitle>
               <Clock className="h-5 w-5 text-orange-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-800">{summaryStats.pendingTrainerSignoff}</div>
+              <div className="text-xs text-gray-500 mt-1">awaiting trainer review</div>
             </CardContent>
+            <div className="absolute bottom-2 right-2">
+              <div className="group relative">
+                <svg className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                </svg>
+                <div className="absolute bottom-6 right-0 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                  <div className="font-semibold mb-1">Pending Approvals</div>
+                  <div className="mb-2">Total completions awaiting trainer sign-off.</div>
+                  <div className="mb-1"><strong>Purpose:</strong></div>
+                  <div>Alerts trainers and managers to completions that need their immediate attention for approval.</div>
+                </div>
+              </div>
+            </div>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 hover:shadow-lg transition-all duration-300 border-0 shadow-md">
+          {/* Unique Employees */}
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 hover:shadow-lg transition-all duration-300 border-0 shadow-md relative">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-semibold text-gray-600">Unique Employees</CardTitle>
+              <CardTitle className="text-sm font-semibold text-gray-600">👥 Unique Employees</CardTitle>
               <Users className="h-5 w-5 text-purple-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-purple-800">{summaryStats.uniqueEmployees}</div>
+              <div className="text-xs text-gray-500 mt-1">in training system</div>
             </CardContent>
+            <div className="absolute bottom-2 right-2">
+              <div className="group relative">
+                <svg className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                </svg>
+                <div className="absolute bottom-6 right-0 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                  <div className="font-semibold mb-1">Unique Employees</div>
+                  <div className="mb-2">Total number of different employees who have been assigned training.</div>
+                  <div className="mb-1"><strong>Purpose:</strong></div>
+                  <div>Shows training program reach — how many people are involved in the training system.</div>
+                </div>
+              </div>
+            </div>
           </Card>
 
-          <Card className="bg-gradient-to-br from-pink-50 to-pink-100 hover:shadow-lg transition-all duration-300 border-0 shadow-md">
+          {/* Unique Modules */}
+          <Card className="bg-gradient-to-br from-pink-50 to-pink-100 hover:shadow-lg transition-all duration-300 border-0 shadow-md relative">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-semibold text-gray-600">Unique Modules</CardTitle>
+              <CardTitle className="text-sm font-semibold text-gray-600">📚 Unique Modules</CardTitle>
               <BookOpen className="h-5 w-5 text-pink-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-pink-800">{summaryStats.uniqueModules}</div>
+              <div className="text-xs text-gray-500 mt-1">training topics</div>
             </CardContent>
+            <div className="absolute bottom-2 right-2">
+              <div className="group relative">
+                <svg className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                </svg>
+                <div className="absolute bottom-6 right-0 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                  <div className="font-semibold mb-1">Unique Modules</div>
+                  <div className="mb-2">Total number of different training modules that have been assigned.</div>
+                  <div className="mb-1"><strong>Purpose:</strong></div>
+                  <div>Shows training program breadth — how many different topics are covered in the training system.</div>
+                </div>
+              </div>
+            </div>
           </Card>
         </div>
 
