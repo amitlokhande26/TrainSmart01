@@ -233,7 +233,9 @@ export default function AdminAssignments() {
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-4">
             <div className="md:col-span-1">
-              <div className="text-sm font-medium text-gray-700 mb-1">Production Line</div>
+              <div className="text-sm font-medium text-gray-700 mb-1">
+                Production Line <span className="text-red-500">*</span>
+              </div>
               <Select onValueChange={(v) => { setSelectedLine(v); setModuleId(null); }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select Line" />
@@ -247,7 +249,9 @@ export default function AdminAssignments() {
             </div>
 
             <div className="md:col-span-1">
-              <div className="text-sm font-medium text-gray-700 mb-1">Module</div>
+              <div className="text-sm font-medium text-gray-700 mb-1">
+                Module <span className="text-red-500">*</span>
+              </div>
               <Select value={moduleId ?? undefined} onValueChange={(v) => setModuleId(v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select Module" />
@@ -261,7 +265,9 @@ export default function AdminAssignments() {
             </div>
 
             <div className="md:col-span-1">
-              <div className="text-sm font-medium text-gray-700 mb-1">Trainee</div>
+              <div className="text-sm font-medium text-gray-700 mb-1">
+                Trainee <span className="text-red-500">*</span>
+              </div>
               <Select value={employeeId ?? undefined} onValueChange={(v) => {
                 setEmployeeId(v);
                 setTrainerId(null);
@@ -283,7 +289,9 @@ export default function AdminAssignments() {
             </div>
 
             <div className="md:col-span-1">
-              <div className="text-sm font-medium text-gray-700 mb-1">Trainer</div>
+              <div className="text-sm font-medium text-gray-700 mb-1">
+                Trainer <span className="text-red-500">*</span>
+              </div>
               <Select value={trainerId ?? undefined} onValueChange={(v) => {
                 if (v === employeeId) {
                   console.log('Preventing self-assignment as trainer');
@@ -345,11 +353,33 @@ export default function AdminAssignments() {
             )}
 
             <div className="md:col-span-4 flex items-center gap-3 pt-2">
-              <Button onClick={assignModule} disabled={!moduleId || !employeeId || assigning}>
+              <Button 
+                onClick={assignModule} 
+                disabled={!moduleId || !employeeId || !trainerId || assigning}
+                className={(!moduleId || !employeeId || !trainerId) ? "opacity-50 cursor-not-allowed" : ""}
+              >
                 {assigning ? 'Assigning...' : 'Assign Module'}
               </Button>
               {message && <span className="text-sm text-gray-600">{message}</span>}
             </div>
+            
+            {/* Validation Message */}
+            {(!moduleId || !employeeId || !trainerId) && (
+              <div className="md:col-span-4 mt-2">
+                <div className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="font-medium">Please complete all required fields:</span>
+                  </div>
+                  <ul className="mt-2 ml-6 space-y-1 text-xs">
+                    {!selectedLine && <li>• Select a Production Line</li>}
+                    {!moduleId && <li>• Select a Module</li>}
+                    {!employeeId && <li>• Select a Trainee</li>}
+                    {!trainerId && <li>• Select a Trainer</li>}
+                  </ul>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
