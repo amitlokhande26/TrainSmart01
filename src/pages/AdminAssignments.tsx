@@ -172,6 +172,7 @@ export default function AdminAssignments() {
           .from('assignments')
           .select(`
             id,
+            status,
             due_date,
             assigned_at,
             assigned_to,
@@ -608,10 +609,15 @@ export default function AdminAssignments() {
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Completed
                             </Badge>
-                          ) : assignment.status === 'pending_signoff' ? (
-                            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                          ) : assignment.status === 'in_progress' ? (
+                            <Badge className="bg-orange-100 text-orange-800 border-orange-200">
                               <Clock className="h-3 w-3 mr-1" />
-                              Pending Sign-off
+                              In Progress
+                            </Badge>
+                          ) : assignment.status === 'assigned' ? (
+                            <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Assigned
                             </Badge>
                           ) : (
                             <Badge className="bg-gray-100 text-gray-800 border-gray-200">

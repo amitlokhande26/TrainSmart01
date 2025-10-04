@@ -232,7 +232,7 @@ export default function AdminReports() {
         // Get assignments separately (safe query)
         const { data: assignments } = await supabase
         .from('assignments')
-          .select('id, due_date, module_id, assigned_to, trainer_user_id');
+          .select('id, status, due_date, module_id, assigned_to, trainer_user_id');
         
         // Get modules separately (safe query)
         const { data: modules } = await supabase
