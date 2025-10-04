@@ -715,15 +715,25 @@ export default function AdminReports() {
             </CardHeader>
             <CardContent>
               <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={monthlyTrendData}>
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="completions" fill={chartColors.completions} name="Completions" />
-                    <Bar dataKey="signoffs" fill={chartColors.signoffs} name="Sign-offs" />
-                  </BarChart>
-                </ResponsiveContainer>
+                {monthlyTrendData.length === 0 ? (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="text-center text-gray-500">
+                      <TrendingUp className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p className="text-sm font-medium">No training data yet</p>
+                      <p className="text-xs text-gray-400 mt-1">Complete some training to see trends</p>
+                    </div>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={monthlyTrendData}>
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="completions" fill={chartColors.completions} name="Completions" />
+                      <Bar dataKey="signoffs" fill={chartColors.signoffs} name="Sign-offs" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </CardContent>
           </Card>
