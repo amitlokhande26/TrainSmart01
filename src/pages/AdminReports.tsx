@@ -746,7 +746,7 @@ export default function AdminReports() {
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 bg-red-500 rounded-full"></span>
                   <span className="font-medium">Not Started:</span>
-                  <span className="font-bold text-red-700">{summaryStats.uniqueEmployees - (employeeCoverageData.find(d => d.name === "Fully Compliant")?.value || 0) - (employeeCoverageData.find(d => d.name === "In-Progress")?.value || 0)}</span>
+                  <span className="font-bold text-red-700">{employeeCoverageData.find(d => d.name === "Not Started")?.value || 0}</span>
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
