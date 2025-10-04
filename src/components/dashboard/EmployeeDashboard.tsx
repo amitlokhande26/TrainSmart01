@@ -29,16 +29,20 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
       const { data, error } = await supabase
         .from('assignments')
         .select(`
-          id,status,due_date,
+          id,status,due_date,trainer_user_id,
           module:modules(id,title,storage_path,type,version),
           completion:completions(id,completed_at,signature:signatures(signed_name_snapshot,signed_email_snapshot,signed_at)),
-          trainer_user_id,
-          trainer:users!trainer_user_id(id,first_name,last_name,email,role)
+          trainer:users!assignments_trainer_user_id_fkey(id,first_name,last_name,email,role)
         `)
         .eq('assigned_to', userId as any)
         .order('assigned_at', { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.error('EmployeeDashboard query error:', error);
+        throw error;
+      }
       console.log('EmployeeDashboard assignments data:', data);
+      console.log('First assignment trainer data:', data?.[0]?.trainer);
+      console.log('First assignment trainer_user_id:', data?.[0]?.trainer_user_id);
       return (data || []) as any[];
     },
     enabled: !!userId,
