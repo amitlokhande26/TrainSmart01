@@ -203,28 +203,6 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* All Card */}
-        <Card 
-          className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
-            activeFilter === 'all'
-              ? 'bg-gradient-to-r from-gray-100 to-gray-200 ring-2 ring-gray-500'
-              : 'bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200'
-          }`}
-          onClick={() => setActiveFilter('all')}
-        >
-          <CardContent className="flex items-center justify-between p-6">
-            <div>
-              <h2 className="text-sm font-semibold text-gray-600">All</h2>
-              <p className="text-3xl font-bold text-gray-800">{totalAssigned}</p>
-            </div>
-            <div className="bg-gray-200 p-3 rounded-full">
-              <svg className="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Assigned Card */}
         <Card 
           className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
@@ -286,6 +264,28 @@ export function EmployeeDashboard({ userName }: EmployeeDashboardProps) {
             <div className="bg-green-200 p-3 rounded-full">
               <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* All Card */}
+        <Card 
+          className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
+            activeFilter === 'all'
+              ? 'bg-gradient-to-r from-gray-100 to-gray-200 ring-2 ring-gray-500'
+              : 'bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200'
+          }`}
+          onClick={() => setActiveFilter('all')}
+        >
+          <CardContent className="flex items-center justify-between p-6">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-600">All</h2>
+              <p className="text-3xl font-bold text-gray-800">{totalAssigned}</p>
+            </div>
+            <div className="bg-gray-200 p-3 rounded-full">
+              <svg className="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
             </div>
           </CardContent>

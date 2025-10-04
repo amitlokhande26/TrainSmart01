@@ -587,7 +587,7 @@ export default function Supervisor() {
                   {activeFilter === 'inprogress' && '⏳ Training Modules In Progress'}
                   {activeFilter === 'completed' && (
                     <>
-                      ✅ Completed<br />
+                      ✅ Completed
                       – Awaiting Sign-Off
                     </>
                   )}
