@@ -487,22 +487,6 @@ export default function AdminUsers() {
                         {u.is_active ? '✓ Active' : '✗ Inactive'}
                       </div>
                     </div>
-                    {/* Edit button for Supervisor and Manager */}
-                    {(u.role === 'supervisor' || u.role === 'manager') && (
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => navigate(`/admin/users/${u.id}`)}
-                        className={`text-xs ${
-                          u.role === 'supervisor' 
-                            ? 'border-green-300 hover:bg-green-50 text-green-700'
-                            : 'border-purple-300 hover:bg-purple-50 text-purple-700'
-                        }`}
-                      >
-                        Edit
-                      </Button>
-                    )}
-                    
                     {/* Reset Password button for Manager only */}
                     {u.role === 'manager' && (
                       <Button 
