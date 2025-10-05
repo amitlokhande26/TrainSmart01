@@ -972,7 +972,7 @@ export default function AdminReports() {
           </Card>
 
           {/* Employee Coverage */}
-          <Card className="shadow-md border-0">
+          <Card className="shadow-md border-0 relative">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-green-600" />
@@ -981,25 +981,33 @@ export default function AdminReports() {
             </CardHeader>
             <CardContent>
               <div className="text-center">
-                <div className="text-4xl font-bold text-green-800 mb-2">
+                <div className="mt-8 text-6xl font-bold text-green-800 mb-10">
                   {employeeCoverageStats.coveragePercentage}%
                 </div>
                 <div className="text-sm text-gray-600 mb-2">
                   {employeeCoverageStats.employeesWithTraining} of {employeeCoverageStats.totalEmployees} employees
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="mt-3 text-xs text-gray-500">
                   👥 Employees with assigned training
-                </div>
-                <div className="mt-3 bg-gray-50 rounded-lg p-3">
-                  <div className="text-xs text-gray-600 text-left">
-                    <div className="font-medium mb-1">Coverage Details:</div>
-                    <div>• Assignment Coverage = (Employees with Training ÷ Total Employees) × 100</div>
-                    <div>• Measures training program reach across workforce</div>
-                    <div>• Helps identify gaps in training distribution</div>
-                  </div>
                 </div>
               </div>
             </CardContent>
+            <div className="absolute bottom-2 right-2">
+              <div className="group relative">
+                <svg className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                </svg>
+                <div className="absolute bottom-6 right-0 w-72 p-3 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                  <div className="font-semibold mb-1">Employee Coverage</div>
+                  <div className="mb-2">Percentage of employees who have been assigned training.</div>
+                  <div className="mb-1"><strong>Formula:</strong></div>
+                  <div className="mb-2">Assignment Coverage = (Employees with Training ÷ Total Employees) × 100</div>
+                  <div className="mb-1"><strong>Purpose:</strong></div>
+                  <div className="mb-2">Measures training program reach across workforce.</div>
+                  <div><strong>Benefit:</strong> Helps identify gaps in training distribution.</div>
+                </div>
+              </div>
+            </div>
           </Card>
         </div>
 
