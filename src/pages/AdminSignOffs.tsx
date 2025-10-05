@@ -13,7 +13,7 @@ export default function AdminSignOffs() {
   const [signOpen, setSignOpen] = React.useState(false);
   const [pendingCompletion, setPendingCompletion] = React.useState<any | null>(null);
   const [signedName, setSignedName] = React.useState('');
-  const [activeFilter, setActiveFilter] = React.useState<'all' | 'assigned' | 'inprogress' | 'completed' | 'signoffs'>('signoffs');
+  const [activeFilter, setActiveFilter] = React.useState<'pending' | 'approved' | 'allassigned'>('pending');
 
   React.useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -162,11 +162,10 @@ export default function AdminSignOffs() {
     enabled: !!userId,
   });
 
-  // Categorize assignments
-  const assigned = allAssignments.filter(a => !a.completion);
-  const inProgress = allAssignments.filter(a => a.isInProgress);
-  const completed = allAssignments.filter(a => a.isCompleted);
-  const toSign = allAssignments.filter(a => a.needsSignoff);
+  // Categorize assignments for trainer sign-offs
+  const pendingSignoffs = allAssignments.filter(a => a.completion && !a.signoff);
+  const approvedSignoffs = allAssignments.filter(a => a.completion && a.signoff);
+  const allTrainerAssignments = allAssignments;
 
   React.useEffect(() => {
     if (!userId) return;
@@ -256,64 +255,42 @@ export default function AdminSignOffs() {
         </div>
 
         {/* Status Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
-          {/* Assigned Card */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {/* Pending Sign-offs Card */}
           <Card 
             className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
-              activeFilter === 'assigned' 
-                ? 'bg-gradient-to-r from-blue-100 to-blue-200 ring-2 ring-blue-500' 
-                : 'bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200'
+              activeFilter === 'pending' 
+                ? 'bg-gradient-to-r from-red-100 to-red-200 ring-2 ring-red-500' 
+                : 'bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200'
             }`}
-            onClick={() => setActiveFilter('assigned')}
+            onClick={() => setActiveFilter('pending')}
           >
             <CardContent className="flex items-center justify-between p-6">
               <div>
-                <h2 className="text-sm font-semibold text-gray-600">Assigned</h2>
-                <p className="text-3xl font-bold text-blue-800">{assigned.length}</p>
+                <h2 className="text-sm font-semibold text-gray-600">Pending Sign-offs</h2>
+                <p className="text-3xl font-bold text-red-800">{pendingSignoffs.length}</p>
               </div>
-              <div className="bg-blue-200 p-3 rounded-full">
-                <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <div className="bg-red-200 p-3 rounded-full">
+                <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
               </div>
             </CardContent>
           </Card>
 
-          {/* In Progress Card */}
+          {/* Approved Card */}
           <Card 
             className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
-              activeFilter === 'inprogress' 
-                ? 'bg-gradient-to-r from-orange-100 to-orange-200 ring-2 ring-orange-500' 
-                : 'bg-gradient-to-r from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200'
-            }`}
-            onClick={() => setActiveFilter('inprogress')}
-          >
-            <CardContent className="flex items-center justify-between p-6">
-              <div>
-                <h2 className="text-sm font-semibold text-gray-600">In Progress</h2>
-                <p className="text-3xl font-bold text-orange-800">{inProgress.length}</p>
-              </div>
-              <div className="bg-orange-200 p-3 rounded-full">
-                <svg className="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Completed Card */}
-          <Card 
-            className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
-              activeFilter === 'completed' 
+              activeFilter === 'approved' 
                 ? 'bg-gradient-to-r from-green-100 to-green-200 ring-2 ring-green-500' 
                 : 'bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200'
             }`}
-            onClick={() => setActiveFilter('completed')}
+            onClick={() => setActiveFilter('approved')}
           >
             <CardContent className="flex items-center justify-between p-6">
               <div>
-                <h2 className="text-sm font-semibold text-gray-600">Completed</h2>
-                <p className="text-3xl font-bold text-green-800">{completed.length}</p>
+                <h2 className="text-sm font-semibold text-gray-600">Approved</h2>
+                <p className="text-3xl font-bold text-green-800">{approvedSignoffs.length}</p>
               </div>
               <div className="bg-green-200 p-3 rounded-full">
                 <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -323,44 +300,22 @@ export default function AdminSignOffs() {
             </CardContent>
           </Card>
 
-          {/* Sign Offs Card */}
+          {/* All Assigned Card */}
           <Card 
             className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
-              activeFilter === 'signoffs' 
-                ? 'bg-gradient-to-r from-purple-100 to-purple-200 ring-2 ring-purple-500' 
-                : 'bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200'
+              activeFilter === 'allassigned' 
+                ? 'bg-gradient-to-r from-blue-100 to-blue-200 ring-2 ring-blue-500' 
+                : 'bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200'
             }`}
-            onClick={() => setActiveFilter('signoffs')}
+            onClick={() => setActiveFilter('allassigned')}
           >
             <CardContent className="flex items-center justify-between p-6">
               <div>
-                <h2 className="text-sm font-semibold text-gray-600">Sign Offs</h2>
-                <p className="text-3xl font-bold text-purple-800">{toSign.length}</p>
+                <h2 className="text-sm font-semibold text-gray-600">All Assigned</h2>
+                <p className="text-3xl font-bold text-blue-800">{allTrainerAssignments.length}</p>
               </div>
-              <div className="bg-purple-200 p-3 rounded-full">
-                <svg className="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* All Card */}
-          <Card 
-            className={`cursor-pointer shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 border-0 ${
-              activeFilter === 'all' 
-                ? 'bg-gradient-to-r from-gray-100 to-gray-200 ring-2 ring-gray-500' 
-                : 'bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200'
-            }`}
-            onClick={() => setActiveFilter('all')}
-          >
-            <CardContent className="flex items-center justify-between p-6">
-              <div>
-                <h2 className="text-sm font-semibold text-gray-600">All</h2>
-                <p className="text-3xl font-bold text-gray-800">{allAssignments.length}</p>
-              </div>
-              <div className="bg-gray-200 p-3 rounded-full">
-                <svg className="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-blue-200 p-3 rounded-full">
+                <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
               </div>
@@ -372,35 +327,29 @@ export default function AdminSignOffs() {
         <Card className="shadow-lg rounded-2xl border-0 bg-gradient-to-br from-white to-gray-50">
           <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-2xl">
             <CardTitle className="text-xl font-bold text-gray-800">
-              {activeFilter === 'all' && 'My Assigned Training Modules'}
-              {activeFilter === 'assigned' && 'Assigned Training Modules'}
-              {activeFilter === 'inprogress' && 'Training Modules In Progress'}
-              {activeFilter === 'completed' && 'Completed Training Modules'}
-              {activeFilter === 'signoffs' && 'Pending Sign-Offs'}
+              {activeFilter === 'pending' && 'Pending Sign-Offs'}
+              {activeFilter === 'approved' && 'Approved Sign-Offs'}
+              {activeFilter === 'allassigned' && 'All Assigned Training Modules'}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             {(() => {
               let filteredAssignments = allAssignments;
               
-              if (activeFilter === 'assigned') {
-                filteredAssignments = assigned;
-              } else if (activeFilter === 'inprogress') {
-                filteredAssignments = inProgress;
-              } else if (activeFilter === 'completed') {
-                filteredAssignments = completed;
-              } else if (activeFilter === 'signoffs') {
-                filteredAssignments = toSign;
+              if (activeFilter === 'pending') {
+                filteredAssignments = pendingSignoffs;
+              } else if (activeFilter === 'approved') {
+                filteredAssignments = approvedSignoffs;
+              } else if (activeFilter === 'allassigned') {
+                filteredAssignments = allTrainerAssignments;
               }
               
               if (filteredAssignments.length === 0) {
                 return (
                   <div className="text-sm text-muted-foreground">
-                    {activeFilter === 'all' && 'No training modules assigned yet.'}
-                    {activeFilter === 'assigned' && 'No assigned training modules.'}
-                    {activeFilter === 'inprogress' && 'No training modules in progress.'}
-                    {activeFilter === 'completed' && 'No completed training modules.'}
-                    {activeFilter === 'signoffs' && 'No items awaiting sign-off.'}
+                    {activeFilter === 'pending' && 'No items awaiting sign-off.'}
+                    {activeFilter === 'approved' && 'No approved sign-offs yet.'}
+                    {activeFilter === 'allassigned' && 'No training modules assigned yet.'}
                   </div>
                 );
               }
@@ -471,7 +420,7 @@ export default function AdminSignOffs() {
                         >
                           {statusLabel}
                         </Badge>
-                        {activeFilter === 'signoffs' && needsSignoff && (
+                        {activeFilter === 'pending' && needsSignoff && (
                           <Button 
                             onClick={() => { setPendingCompletion(a); setSignOpen(true); }}
                             className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-medium px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
