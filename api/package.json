@@ -1,0 +1,13 @@
+{
+  "name": "trainsmart-api",
+  "version": "1.0.0",
+  "description": "API functions for TrainSmart email notifications",
+  "main": "index.js",
+  "dependencies": {
+    "@vercel/node": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

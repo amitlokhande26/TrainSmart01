@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training Due Alert - Trainer Notification</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8fafc;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .content h2 {
+            color: #7C3AED;
+            margin-top: 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .content p {
+            margin-bottom: 16px;
+            font-size: 16px;
+        }
+        .highlight-box {
+            background-color: #FAF5FF;
+            border-left: 4px solid #8B5CF6;
+            padding: 16px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 20px 0;
+            transition: transform 0.2s;
+        }
+        .cta-button:hover {
+            transform: translateY(-1px);
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #F8FAFC;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .info-table th {
+            background-color: #E2E8F0;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+        }
+        .info-table td {
+            padding: 12px;
+            border-top: 1px solid #E5E7EB;
+        }
+        .footer {
+            background-color: #F8FAFC;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #E5E7EB;
+            color: #6B7280;
+            font-size: 14px;
+        }
+        .trainer-notice {
+            background-color: #FAF5FF;
+            border: 2px solid #8B5CF6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .trainer-notice h3 {
+            color: #7C3AED;
+            margin: 0 0 8px 0;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👨‍🏫 Trainer Notification</h1>
+        </div>
+        <div class="content">
+            <h2>Hello {{TRAINER_NAME}},</h2>
+            
+            <div class="trainer-notice">
+                <h3>{{ALERT_TYPE}}</h3>
+                <p>A trainee's assignment is approaching its due date and may need your attention.</p>
+            </div>
+            
+            <p>One of your assigned trainees has a training module that is due soon. Please check on their progress and provide support if needed.</p>
+            
+            <table class="info-table">
+                <tr>
+                    <th>Trainee</th>
+                    <td><strong>{{TRAINEE_NAME}}</strong></td>
+                </tr>
+                <tr>
+                    <th>Training Module</th>
+                    <td><strong>{{MODULE_TITLE}}</strong></td>
+                </tr>
+                <tr>
+                    <th>Version</th>
+                    <td>v{{MODULE_VERSION}}</td>
+                </tr>
+                <tr>
+                    <th>Due Date</th>
+                    <td><strong>{{DUE_DATE}}</strong></td>
+                </tr>
+                <tr>
+                    <th>Days Remaining</th>
+                    <td><strong>{{DAYS_REMAINING}}</strong></td>
+                </tr>
+                <tr>
+                    <th>Production Line</th>
+                    <td>{{LINE_NAME}}</td>
+                </tr>
+                <tr>
+                    <th>Current Status</th>
+                    <td>{{CURRENT_STATUS}}</td>
+                </tr>
+            </table>
+            
+            <div class="highlight-box">
+                <p><strong>📋 Trainer Actions:</strong></p>
+                <p>1. Check trainee's progress in TrainSmart</p>
+                <p>2. Reach out to provide guidance if needed</p>
+                <p>3. Ensure they have access to all required materials</p>
+                <p>4. Be ready to review and sign off when completed</p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{LOGIN_URL}}" class="cta-button">View Trainee Progress</a>
+            </div>
+            
+            <p>Your support is crucial for ensuring successful training completion. Thank you for your dedication!</p>
+        </div>
+        <div class="footer">
+            <p><strong>TrainSmart</strong> - Professional Training Management System</p>
+            <p>This is an automated notification. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>

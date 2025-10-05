@@ -7,5 +7,11 @@
   ],
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "framework": "vite"
+  "framework": "vite",
+  "crons": [
+    {
+      "path": "/api/cron/daily-email-checks",
+      "schedule": "0 9 * * *"
+    }
+  ]
 }

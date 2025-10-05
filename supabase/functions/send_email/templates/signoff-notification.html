@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training Sign-off Notification</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8fafc;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .content h2 {
+            color: #4F46E5;
+            margin-top: 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .content p {
+            margin-bottom: 16px;
+            font-size: 16px;
+        }
+        .highlight-box {
+            background-color: #EEF2FF;
+            border-left: 4px solid #6366F1;
+            padding: 16px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 20px 0;
+            transition: transform 0.2s;
+        }
+        .cta-button:hover {
+            transform: translateY(-1px);
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #F8FAFC;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .info-table th {
+            background-color: #E2E8F0;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+        }
+        .info-table td {
+            padding: 12px;
+            border-top: 1px solid #E5E7EB;
+        }
+        .footer {
+            background-color: #F8FAFC;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #E5E7EB;
+            color: #6B7280;
+            font-size: 14px;
+        }
+        .approved-notice {
+            background-color: #ECFDF5;
+            border: 2px solid #10B981;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .approved-notice h3 {
+            color: #059669;
+            margin: 0 0 8px 0;
+            font-size: 18px;
+        }
+        .rejected-notice {
+            background-color: #FEF2F2;
+            border: 2px solid #DC2626;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .rejected-notice h3 {
+            color: #DC2626;
+            margin: 0 0 8px 0;
+            font-size: 18px;
+        }
+        .trainer-info {
+            background-color: #F8FAFC;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .trainer-info h4 {
+            color: #374151;
+            margin: 0 0 12px 0;
+        }
+        .trainer-info p {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👨‍🏫 Trainer Sign-off Notification</h1>
+        </div>
+        <div class="content">
+            <h2>Hello {{TRAINEE_NAME}},</h2>
+            
+            {{SIGNOFF_STATUS}}
+            
+            <p>Your trainer has reviewed your completed training and provided their sign-off decision.</p>
+            
+            <table class="info-table">
+                <tr>
+                    <th>Training Module</th>
+                    <td><strong>{{MODULE_TITLE}}</strong></td>
+                </tr>
+                <tr>
+                    <th>Version</th>
+                    <td>v{{MODULE_VERSION}}</td>
+                </tr>
+                <tr>
+                    <th>Completed By</th>
+                    <td><strong>{{TRAINEE_NAME}}</strong></td>
+                </tr>
+                <tr>
+                    <th>Completion Date</th>
+                    <td>{{COMPLETION_DATE}}</td>
+                </tr>
+                <tr>
+                    <th>Trainer</th>
+                    <td><strong>{{TRAINER_NAME}}</strong></td>
+                </tr>
+                <tr>
+                    <th>Sign-off Date</th>
+                    <td><strong>{{SIGNOFF_DATE}}</strong></td>
+                </tr>
+                <tr>
+                    <th>Sign-off Time</th>
+                    <td><strong>{{SIGNOFF_TIME}}</strong></td>
+                </tr>
+                <tr>
+                    <th>Production Line</th>
+                    <td>{{LINE_NAME}}</td>
+                </tr>
+            </table>
+            
+            <div class="trainer-info">
+                <h4>👨‍🏫 Trainer Information:</h4>
+                <p><strong>Name:</strong> {{TRAINER_NAME}}</p>
+                <p><strong>Email:</strong> {{TRAINER_EMAIL}}</p>
+                {{TRAINER_COMMENTS}}
+            </div>
+            
+            {{NEXT_STEPS}}
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{LOGIN_URL}}" class="cta-button">View Training Status</a>
+            </div>
+            
+            <p>Thank you for your commitment to professional development!</p>
+        </div>
+        <div class="footer">
+            <p><strong>TrainSmart</strong> - Professional Training Management System</p>
+            <p>This is an automated notification. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>

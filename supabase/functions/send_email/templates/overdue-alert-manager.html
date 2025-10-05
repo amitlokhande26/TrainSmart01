@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overdue Training Alert - Manager Notification</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8fafc;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .content h2 {
+            color: #B91C1C;
+            margin-top: 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .content p {
+            margin-bottom: 16px;
+            font-size: 16px;
+        }
+        .highlight-box {
+            background-color: #FEF2F2;
+            border-left: 4px solid #DC2626;
+            padding: 16px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 20px 0;
+            transition: transform 0.2s;
+        }
+        .cta-button:hover {
+            transform: translateY(-1px);
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #F8FAFC;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .info-table th {
+            background-color: #E2E8F0;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+        }
+        .info-table td {
+            padding: 12px;
+            border-top: 1px solid #E5E7EB;
+        }
+        .footer {
+            background-color: #F8FAFC;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #E5E7EB;
+            color: #6B7280;
+            font-size: 14px;
+        }
+        .urgent-notice {
+            background-color: #FEF2F2;
+            border: 2px solid #DC2626;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .urgent-notice h3 {
+            color: #DC2626;
+            margin: 0 0 8px 0;
+            font-size: 18px;
+        }
+        .overdue-item {
+            background-color: #FEF2F2;
+            border: 1px solid #FECACA;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+        }
+        .overdue-item h4 {
+            color: #DC2626;
+            margin: 0 0 8px 0;
+        }
+        .overdue-item p {
+            margin: 4px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚨 Overdue Training Alert</h1>
+        </div>
+        <div class="content">
+            <h2>Hello {{MANAGER_NAME}},</h2>
+            
+            <div class="urgent-notice">
+                <h3>⚠️ URGENT: Overdue Training Assignments</h3>
+                <p>There are {{OVERDUE_COUNT}} training assignments that have passed their due dates and require immediate attention.</p>
+            </div>
+            
+            <p>As a manager, you are being notified of overdue training assignments in your organization. Please take immediate action to ensure compliance and completion.</p>
+            
+            <h3>📋 Overdue Training Assignments:</h3>
+            
+            {{OVERDUE_LIST}}
+            
+            <div class="highlight-box">
+                <p><strong>🎯 Required Actions:</strong></p>
+                <p>1. <strong>Immediate Follow-up:</strong> Contact the assigned trainees directly</p>
+                <p>2. <strong>Trainer Coordination:</strong> Ensure trainers are providing support</p>
+                <p>3. <strong>Priority Scheduling:</strong> Make training completion a top priority</p>
+                <p>4. <strong>Documentation:</strong> Update training records and timelines</p>
+                <p>5. <strong>Escalation:</strong> Consider additional support or resources if needed</p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ADMIN_URL}}" class="cta-button">View All Assignments</a>
+            </div>
+            
+            <p><strong>Compliance Note:</strong> Overdue training assignments may impact regulatory compliance and operational safety. Please ensure immediate resolution.</p>
+            
+            <p>Thank you for your attention to this matter.</p>
+        </div>
+        <div class="footer">
+            <p><strong>TrainSmart</strong> - Professional Training Management System</p>
+            <p>This is an automated notification. Please do not reply to this email.</p>
+            <p>For urgent matters, please contact the system administrator directly.</p>
+        </div>
+    </div>
+</body>
+</html>
