@@ -131,7 +131,18 @@ export default function AdminUsers() {
         body: { first_name: firstName, last_name: lastName, email, default_password: 'EmployeeTrain1*', initial_module_ids: [] }
       });
       if (error) throw error;
-      setMessage(`Created employee ${email} with password: EmployeeTrain1*`);
+      
+      // Send welcome email to the new employee
+      try {
+        await supabase.functions.invoke('send_welcome_email', {
+          body: { userId: data.user_id }
+        });
+        setMessage(`Created employee ${email} with password: EmployeeTrain1*. Welcome email sent!`);
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        setMessage(`Created employee ${email} with password: EmployeeTrain1*. Note: Welcome email failed to send.`);
+      }
+      
       setFirstName(''); setLastName(''); setEmail('');
       await refetch();
     } catch (e: any) {
@@ -150,7 +161,18 @@ export default function AdminUsers() {
         body: { first_name: supervisorFirstName, last_name: supervisorLastName, email: supervisorEmail, default_password: 'SuperTrain1*' }
       });
       if (error) throw error;
-      setSupervisorMessage(`Created supervisor ${supervisorEmail} with password: SuperTrain1*`);
+      
+      // Send welcome email to the new supervisor
+      try {
+        await supabase.functions.invoke('send_welcome_email', {
+          body: { userId: data.user_id }
+        });
+        setSupervisorMessage(`Created supervisor ${supervisorEmail} with password: SuperTrain1*. Welcome email sent!`);
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        setSupervisorMessage(`Created supervisor ${supervisorEmail} with password: SuperTrain1*. Note: Welcome email failed to send.`);
+      }
+      
       setSupervisorFirstName(''); setSupervisorLastName(''); setSupervisorEmail('');
       await refetchSupervisors();
     } catch (e: any) {
@@ -181,8 +203,19 @@ export default function AdminUsers() {
       });
       if (error) throw error;
       
-      const message = data.message || `Created manager ${managerEmail}`;
-      setManagerMessage(message);
+      // Send welcome email to the new manager
+      try {
+        await supabase.functions.invoke('send_welcome_email', {
+          body: { userId: data.user_id }
+        });
+        const message = data.message || `Created manager ${managerEmail}`;
+        setManagerMessage(`${message}. Welcome email sent!`);
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        const message = data.message || `Created manager ${managerEmail}`;
+        setManagerMessage(`${message}. Note: Welcome email failed to send.`);
+      }
+      
       setManagerFirstName(''); 
       setManagerLastName(''); 
       setManagerEmail(''); 
