@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { CheckCircle, Clock, AlertCircle, Users, BookOpen, TrendingUp, Download, FileText, ChevronDown, Calendar as CalendarIcon, RefreshCw, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { exportTrainingReportsExcelFormatted as exportFormattedExcel } from '@/utils/excelFormattedExport';
+import { formatDateForDisplay, formatDateForInput } from '@/utils/dateFormat';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 // Format training data for Excel export
@@ -1462,7 +1463,7 @@ export default function AdminReports() {
                           <Badge variant="secondary">{row.category_name}</Badge>
                         </TableCell>
                         <TableCell>
-                          {row.completed_at ? new Date(row.completed_at).toLocaleDateString() : 'N/A'}
+                          {formatDateForDisplay(row.completed_at)}
                         </TableCell>
                         <TableCell>
                           <Badge variant={row.has_trainer_signoff ? 'default' : 'secondary'}>

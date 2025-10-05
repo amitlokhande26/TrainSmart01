@@ -4,6 +4,7 @@
  */
 
 import ExcelJS from 'exceljs';
+import { formatDateForDisplay, formatDateTimeForDisplay } from './dateFormat';
 
 export interface ExcelFormattedOptions {
   filename?: string;
@@ -23,7 +24,7 @@ function formatTimeAndDate(value: any): string {
   if (isNaN(d.getTime())) return '';
   const hours = String(d.getHours()).padStart(2, '0');
   const minutes = String(d.getMinutes()).padStart(2, '0');
-  const datePart = d.toLocaleDateString();
+  const datePart = formatDateForDisplay(d);
   return `${hours}:${minutes} | ${datePart}`;
 }
 
@@ -233,7 +234,7 @@ export async function exportTrainingReportsExcelFormatted(
 
       // Format specific fields
       if (key === 'completed_at' || key === 'due_date') {
-        value = value ? new Date(value).toLocaleDateString() : '';
+        value = formatDateForDisplay(value);
       } else if (key === 'signed_at' || key === 'trainer_signed_at') {
         value = formatTimeAndDate(value);
       } else if (key === 'has_trainer_signoff') {

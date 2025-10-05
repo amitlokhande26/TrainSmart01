@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Clock, CheckCircle, FileText, Calendar } from 'lucide-react';
 import { TrainingModule } from './EmployeeDashboard';
+import { getCurrentDateDDMMYYYY } from '@/utils/dateFormat';
 
 interface TrainingModuleViewProps {
   module: TrainingModule;
@@ -24,11 +25,7 @@ export function TrainingModuleView({ module, userName, onBack, onComplete }: Tra
     if (module.status !== 'completed') {
       // Set default values
       setSignature(userName);
-      setCompletionDate(new Date().toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      }).replace(/\//g, ''));
+      setCompletionDate(getCurrentDateDDMMYYYY());
       setShowSignatureDialog(true);
     }
   };

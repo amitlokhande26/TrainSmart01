@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useQuery } from '@tanstack/react-query';
 import { CheckCircle, Clock, AlertCircle, Users, BookOpen, Calendar, User } from 'lucide-react';
+import { formatDateForDisplay } from '@/utils/dateFormat';
 
 export default function AdminAssignments() {
   const [name, setName] = React.useState<string>('Admin');
@@ -609,7 +610,7 @@ export default function AdminAssignments() {
                             <div className="flex items-center gap-1">
                               <Calendar className="h-4 w-4 text-gray-400" />
                               <span className="text-sm">
-                                {new Date(assignment.due_date).toLocaleDateString()}
+                                {formatDateForDisplay(assignment.due_date)}
                               </span>
                             </div>
                           ) : (
@@ -645,7 +646,7 @@ export default function AdminAssignments() {
                               {assignment.assigned_by_user?.first_name} {assignment.assigned_by_user?.last_name}
                             </div>
                             <div className="text-sm text-gray-500">
-                              {new Date(assignment.assigned_at).toLocaleDateString()}
+                              {formatDateForDisplay(assignment.assigned_at)}
                             </div>
                           </div>
                         </TableCell>
