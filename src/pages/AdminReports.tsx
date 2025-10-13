@@ -771,7 +771,7 @@ export default function AdminReports() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-800">{summaryStats.pendingTrainerSignoff}</div>
-              <div className="text-xs text-gray-500 mt-1">awaiting trainer review</div>
+              <div className="text-xs text-gray-500 mt-1">Awaiting Trainer Review</div>
             </CardContent>
             <div className="absolute bottom-2 right-2">
               <div className="group relative">
@@ -796,7 +796,7 @@ export default function AdminReports() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-purple-800">{summaryStats.uniqueEmployees}</div>
-              <div className="text-xs text-gray-500 mt-1">in training system</div>
+              <div className="text-xs text-gray-500 mt-1">- In Training System</div>
             </CardContent>
             <div className="absolute bottom-2 right-2">
               <div className="group relative">
@@ -821,7 +821,7 @@ export default function AdminReports() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-pink-800">{summaryStats.uniqueModules}</div>
-              <div className="text-xs text-gray-500 mt-1">training topics</div>
+              <div className="text-xs text-gray-500 mt-1">Training Topics</div>
             </CardContent>
             <div className="absolute bottom-2 right-2">
               <div className="group relative">
