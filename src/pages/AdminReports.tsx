@@ -919,7 +919,7 @@ export default function AdminReports() {
                       data={moduleCoverageData}
                       dataKey="value"
                       nameKey="name"
-                      outerRadius={70}
+                      outerRadius={65}
                       label={({ name, percentage }) => `${name}: ${percentage}%`}
                     >
                       {moduleCoverageData.map((entry, index) => (
