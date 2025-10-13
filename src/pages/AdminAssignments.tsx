@@ -40,11 +40,6 @@ export default function AdminAssignments() {
     await supabase.auth.signOut();
   };
 
-  const { data: lines } = useQuery({
-    queryKey: ['lines'],
-    queryFn: async () => (await supabase.from('lines').select('*').order('name')).data || []
-  });
-
   const [selectedLine, setSelectedLine] = React.useState<string | null>(null);
   const [selectedUserRole, setSelectedUserRole] = React.useState<string | null>(null);
   const [moduleId, setModuleId] = React.useState<string | null>(null);
@@ -57,6 +52,49 @@ export default function AdminAssignments() {
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [assignmentsSearch, setAssignmentsSearch] = React.useState<string>('');
   const [debouncedAssignmentsSearch, setDebouncedAssignmentsSearch] = React.useState<string>('');
+  
+  // Bulk assignment state
+  const [assignmentMode, setAssignmentMode] = React.useState<'individual' | 'bulk'>('individual');
+  const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
+
+  // Queries
+  const { data: lines } = useQuery({
+    queryKey: ['lines'],
+    queryFn: async () => (await supabase.from('lines').select('*').order('name')).data || []
+  });
+
+  // Get categories for bulk assignment
+  const { data: categories } = useQuery({
+    queryKey: ['categories', selectedLine],
+    queryFn: async () => {
+      if (!selectedLine) return [];
+      const { data } = await supabase
+        .from('categories')
+        .select('id, name')
+        .eq('line_id', selectedLine)
+        .eq('is_active', true)
+        .order('name');
+      return data || [];
+    },
+    enabled: !!selectedLine
+  });
+
+  // Get bulk modules for the selected category
+  const { data: bulkModules } = useQuery({
+    queryKey: ['bulk-modules', selectedLine, selectedCategory],
+    queryFn: async () => {
+      if (!selectedLine || !selectedCategory) return [];
+      const { data } = await supabase
+        .from('modules')
+        .select('id, title, version')
+        .eq('line_id', selectedLine)
+        .eq('category_id', selectedCategory)
+        .eq('is_active', true)
+        .order('title');
+      return data || [];
+    },
+    enabled: !!selectedLine && !!selectedCategory && assignmentMode === 'bulk'
+  });
 
   // Reset trainer when employee changes
   React.useEffect(() => {
@@ -288,6 +326,67 @@ export default function AdminAssignments() {
     }
   };
 
+  // Bulk assignment function
+  const assignBulkModules = async () => {
+    if (!selectedLine || !selectedCategory || !employeeId || !trainerId) return;
+    
+    setAssigning(true);
+    setMessage(null);
+    
+    try {
+      const { data: me } = await supabase.auth.getUser();
+      const assignedBy = me.user?.id as string;
+      
+      // Prevent self-assignment as both trainee and trainer
+      if (employeeId === assignedBy && trainerId === assignedBy) {
+        setMessage('Error: You cannot assign yourself as both trainee and trainer in the same assignment.');
+        setAssigning(false);
+        return;
+      }
+      
+      // Get all modules in the category
+      const { data: modules } = await supabase
+        .from('modules')
+        .select('id, title')
+        .eq('line_id', selectedLine)
+        .eq('category_id', selectedCategory)
+        .eq('is_active', true);
+      
+      if (!modules || modules.length === 0) {
+        setMessage('No modules found in selected category');
+        return;
+      }
+      
+      // Create assignments for all modules
+      const assignments = modules.map(module => ({
+        module_id: module.id,
+        assigned_to: employeeId,
+        assigned_by: assignedBy,
+        trainer_user_id: trainerId,
+        ...(dueDate && { due_date: dueDate })
+      }));
+      
+      // Insert all assignments (ignore duplicates due to unique constraint)
+      const { error } = await supabase.from('assignments').insert(assignments);
+      
+      if (error) {
+        // Handle partial success - some might be duplicates
+        if (error.message.includes('duplicate key')) {
+          setMessage(`✅ Bulk assignment completed! Some modules were already assigned (duplicates skipped).`);
+        } else {
+          throw error;
+        }
+      } else {
+        setMessage(`✅ Successfully assigned all ${modules.length} modules in the selected category!`);
+      }
+      
+    } catch (e: any) {
+      setMessage(e?.message || 'Failed to assign modules');
+    } finally {
+      setAssigning(false);
+    }
+  };
+
   const handleEditAssignment = (assignment: any) => {
     setEditingAssignment(assignment);
     setIsEditModalOpen(true);
@@ -366,7 +465,31 @@ export default function AdminAssignments() {
 
         <Card className="shadow-md border-0 rounded-2xl">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-semibold text-gray-900">Create Assignment</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-semibold text-gray-900">Create Assignment</CardTitle>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={assignmentMode === 'individual' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => {
+                    setAssignmentMode('individual');
+                    setSelectedCategory(null);
+                  }}
+                >
+                  Individual
+                </Button>
+                <Button
+                  variant={assignmentMode === 'bulk' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => {
+                    setAssignmentMode('bulk');
+                    setModuleId(null);
+                  }}
+                >
+                  Bulk Category
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-4">
             <div className="md:col-span-1">
@@ -385,21 +508,39 @@ export default function AdminAssignments() {
               </Select>
             </div>
 
-            <div className="md:col-span-1">
-              <div className="text-sm font-medium text-gray-700 mb-1">
-                Module <span className="text-red-500">*</span>
+            {assignmentMode === 'individual' ? (
+              <div className="md:col-span-1">
+                <div className="text-sm font-medium text-gray-700 mb-1">
+                  Module <span className="text-red-500">*</span>
+                </div>
+                <Select value={moduleId ?? undefined} onValueChange={(v) => setModuleId(v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Module" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {modules?.map((m: any) => (
+                      <SelectItem key={m.id} value={m.id}>{m.title} (v{m.version})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={moduleId ?? undefined} onValueChange={(v) => setModuleId(v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Module" />
-                </SelectTrigger>
-                <SelectContent>
-                  {modules?.map((m: any) => (
-                    <SelectItem key={m.id} value={m.id}>{m.title} (v{m.version})</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            ) : (
+              <div className="md:col-span-1">
+                <div className="text-sm font-medium text-gray-700 mb-1">
+                  Category <span className="text-red-500">*</span>
+                </div>
+                <Select value={selectedCategory ?? undefined} onValueChange={(v) => setSelectedCategory(v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories?.map((c: any) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="md:col-span-1">
               <div className="text-sm font-medium text-gray-700 mb-1">
@@ -489,14 +630,58 @@ export default function AdminAssignments() {
               </div>
             )}
 
+            {/* Bulk Assignment Preview */}
+            {assignmentMode === 'bulk' && selectedCategory && bulkModules && bulkModules.length > 0 && (
+              <div className="md:col-span-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BookOpen className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-800">Modules to be assigned:</span>
+                  </div>
+                  <div className="text-sm text-blue-700">
+                    {bulkModules.length} module{bulkModules.length !== 1 ? 's' : ''} in the selected category:
+                  </div>
+                  <div className="mt-2 max-h-32 overflow-y-auto">
+                    <div className="grid grid-cols-1 gap-1">
+                      {bulkModules.map((module: any) => (
+                        <div key={module.id} className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                          • {module.title} (v{module.version})
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {assignmentMode === 'bulk' && selectedCategory && bulkModules && bulkModules.length === 0 && (
+              <div className="md:col-span-4">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="text-sm text-yellow-800">
+                    ⚠️ No modules found in the selected category for this production line.
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="md:col-span-4 flex items-center gap-3 pt-2">
-              <Button 
-                onClick={assignModule} 
-                disabled={!moduleId || !employeeId || !trainerId || assigning}
-                className={(!moduleId || !employeeId || !trainerId) ? "opacity-50 cursor-not-allowed" : ""}
-              >
-                {assigning ? 'Assigning...' : 'Assign Module'}
-              </Button>
+              {assignmentMode === 'individual' ? (
+                <Button 
+                  onClick={assignModule} 
+                  disabled={!moduleId || !employeeId || !trainerId || assigning}
+                  className={(!moduleId || !employeeId || !trainerId) ? "opacity-50 cursor-not-allowed" : ""}
+                >
+                  {assigning ? 'Assigning...' : 'Assign Module'}
+                </Button>
+              ) : (
+                <Button 
+                  onClick={assignBulkModules} 
+                  disabled={!selectedCategory || !employeeId || !trainerId || assigning || (bulkModules && bulkModules.length === 0)}
+                  className={(!selectedCategory || !employeeId || !trainerId || (bulkModules && bulkModules.length === 0)) ? "opacity-50 cursor-not-allowed" : ""}
+                >
+                  {assigning ? 'Assigning...' : `Assign All ${bulkModules?.length || 0} Modules`}
+                </Button>
+              )}
               {message && <span className="text-sm text-gray-600">{message}</span>}
             </div>
           </CardContent>
