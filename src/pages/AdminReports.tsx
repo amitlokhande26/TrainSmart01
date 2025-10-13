@@ -1042,7 +1042,7 @@ export default function AdminReports() {
                 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2">
+                    <Button className="flex items-center gap-2">
                       <Download className="h-4 w-4" />
                       Export
                       <ChevronDown className="h-4 w-4" />
@@ -1073,9 +1073,7 @@ export default function AdminReports() {
                   Refresh
                 </Button>
                 
-                <Button onClick={handleGeneratePdf} disabled={loading} className="flex items-center gap-2">
-                  {loading ? 'Generating...' : 'Generate PDF'}
-                </Button>
+                {/* Removed Generate PDF button per request */}
               </div>
             </div>
           </CardContent>
