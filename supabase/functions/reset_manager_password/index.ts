@@ -229,7 +229,7 @@ export default async function handler(req) {
                         font-style: italic;
                     }
                     .cta-button {
-                        display: inline-block;
+                        display: inline-flex;
                         background-color: #22c55e;
                         color: white;
                         text-decoration: none;
@@ -240,7 +240,6 @@ export default async function handler(req) {
                         transition: transform 0.2s;
                         text-align: center;
                         font-size: 16px;
-                        display: flex;
                         align-items: center;
                         justify-content: center;
                         gap: 8px;
