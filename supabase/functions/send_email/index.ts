@@ -50,7 +50,14 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { template, to, subject, variables, from = 'TrainSmart <noreply@trainsmart.com>' }: EmailRequest = await req.json();
+    const body: EmailRequest = await req.json();
+    const template = body.template;
+    const to = body.to;
+    const subject = body.subject;
+    const variables = body.variables;
+    const fallbackFromAddress = Deno.env.get('FROM_EMAIL_ADDRESS') || 'no-reply@trainsmart.smartgendigital.com';
+    const fallbackFromName = Deno.env.get('FROM_EMAIL_NAME') || 'TrainSmart';
+    const from = body.from || `${fallbackFromName} <${fallbackFromAddress}>`;
 
     // Validate required fields
     if (!template || !to || !subject) {
@@ -74,6 +81,14 @@ Deno.serve(async (req: Request) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
+    }
+    // Basic validation: if using a custom From domain, ensure it matches a verified domain (best-effort warning)
+    if (from.includes('@')) {
+      const fromDomain = from.substring(from.indexOf('@') + 1).replace('>', '').trim();
+      const allowedDomain = (Deno.env.get('ALLOWED_EMAIL_DOMAIN') || 'trainsmart.smartgendigital.com').toLowerCase();
+      if (!fromDomain.endsWith(allowedDomain)) {
+        console.warn(`From address domain (${fromDomain}) does not match allowed domain (${allowedDomain}). Resend may reject this message.`);
+      }
     }
 
     // Load email template
@@ -128,15 +143,28 @@ Deno.serve(async (req: Request) => {
       },
       body: JSON.stringify(emailData),
     });
-
-    const resendData = await resendResponse.json();
+    // Read response body safely (JSON or text)
+    let resendData: any = null;
+    let resendRaw: string | null = null;
+    try {
+      resendData = await resendResponse.json();
+    } catch (_e) {
+      try {
+        resendRaw = await resendResponse.text();
+      } catch (_e2) {
+        resendRaw = null;
+      }
+    }
 
     if (!resendResponse.ok) {
-      console.error('Resend API error:', resendData);
+      console.error('Resend API error:', resendData || resendRaw);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: `Email sending failed: ${resendData.message || 'Unknown error'}` 
+          error: `Email sending failed: ${
+            (resendData && (resendData.message || resendData.error)) || (resendRaw || 'Unknown error')
+          }`,
+          provider: resendData || resendRaw
         }),
         { 
           status: 500, 

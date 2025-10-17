@@ -310,7 +310,7 @@ export default function AdminMyTraining() {
   return (
     <div className="min-h-screen bg-background">
       <Header userType="admin" userName={name} onLogout={async () => supabase.auth.signOut()} />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <main className="container mx-auto px-4 py-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-foreground">My Training</h2>
