@@ -132,16 +132,8 @@ export default function AdminUsers() {
       });
       if (error) throw error;
       
-      // Send welcome email to the new employee
-      try {
-        await supabase.functions.invoke('send_welcome_email', {
-          body: { userId: data.user_id }
-        });
-        setMessage(`Created employee ${email} with password: EmployeeTrain1*. Welcome email sent!`);
-      } catch (emailError) {
-        console.error('Failed to send welcome email:', emailError);
-        setMessage(`Created employee ${email} with password: EmployeeTrain1*. Note: Welcome email failed to send.`);
-      }
+      // No need to call send_welcome_email - create_employee_user now handles email sending internally
+      setMessage(`Created employee ${email} with password: EmployeeTrain1*. Welcome email sent!`);
       
       setFirstName(''); setLastName(''); setEmail('');
       await refetch();
