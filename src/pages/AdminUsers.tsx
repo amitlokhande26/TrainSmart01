@@ -154,16 +154,8 @@ export default function AdminUsers() {
       });
       if (error) throw error;
       
-      // Send welcome email to the new supervisor
-      try {
-        await supabase.functions.invoke('send_welcome_email', {
-          body: { userId: data.user.id }
-        });
-        setSupervisorMessage(`Created supervisor ${supervisorEmail} with password: SuperTrain1*. Welcome email sent!`);
-      } catch (emailError) {
-        console.error('Failed to send welcome email:', emailError);
-        setSupervisorMessage(`Created supervisor ${supervisorEmail} with password: SuperTrain1*. Note: Welcome email failed to send.`);
-      }
+      // No need to call send_welcome_email - create_supervisor_user now handles email sending internally
+      setSupervisorMessage(`Created supervisor ${supervisorEmail} with password: SuperTrain1*. Welcome email sent!`);
       
       setSupervisorFirstName(''); setSupervisorLastName(''); setSupervisorEmail('');
       await refetchSupervisors();
