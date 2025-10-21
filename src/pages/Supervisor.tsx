@@ -15,6 +15,7 @@ export default function Supervisor() {
   const [signedName, setSignedName] = React.useState('');
   const [activeTab, setActiveTab] = React.useState<'mytrainings' | 'trainersignoffs'>('mytrainings');
   const [activeFilter, setActiveFilter] = React.useState<'all' | 'assigned' | 'inprogress' | 'completed' | 'pending' | 'approved' | 'allassigned'>('all');
+  const [showHelp, setShowHelp] = React.useState(false);
 
   React.useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -389,27 +390,80 @@ export default function Supervisor() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex space-x-1 bg-muted p-1 rounded-lg w-fit">
-          <Button
-            variant={activeTab === 'mytrainings' ? 'default' : 'ghost'}
-            onClick={() => {
-              setActiveTab('mytrainings');
-              setActiveFilter('assigned');
-            }}
-            className="flex items-center gap-2"
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex space-x-1 bg-muted p-1 rounded-lg w-fit">
+              <Button
+                variant={activeTab === 'mytrainings' ? 'default' : 'ghost'}
+                onClick={() => {
+                  setActiveTab('mytrainings');
+                  setActiveFilter('assigned');
+                }}
+                className="flex items-center gap-2"
+              >
+                🔰 My Trainings
+              </Button>
+              <Button
+                variant={activeTab === 'trainersignoffs' ? 'default' : 'ghost'}
+                onClick={() => {
+                  setActiveTab('trainersignoffs');
+                  setActiveFilter('allassigned');
+                }}
+                className="flex items-center gap-2"
+              >
+                ✍️ Trainer Sign-offs
+              </Button>
+            </div>
+            
+            {/* Help Toggle Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowHelp(!showHelp)}
+              className="flex items-center gap-2 transition-all duration-200"
+            >
+              💡 Need clarity? Let's make this easier!
+              <span className={`transform transition-transform duration-200 ${showHelp ? 'rotate-180' : 'rotate-0'}`}>
+                ▼
+              </span>
+            </Button>
+          </div>
+          
+          {/* Collapsible Tab Information */}
+          <div 
+            className={`overflow-hidden transition-all duration-300 ease-in-out ${
+              showHelp ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+            }`}
           >
-            🔰 My Trainings
-          </Button>
-          <Button
-            variant={activeTab === 'trainersignoffs' ? 'default' : 'ghost'}
-            onClick={() => {
-              setActiveTab('trainersignoffs');
-              setActiveFilter('allassigned');
-            }}
-            className="flex items-center gap-2"
-          >
-            ✍️ Trainer Sign-offs
-          </Button>
+            {activeTab === 'mytrainings' && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-900 mb-2">📚 My Trainings - Your Learning Journey</h3>
+                <p className="text-sm text-blue-800 mb-2">
+                  This section shows training modules assigned to you as a trainee. Track your progress through different stages:
+                </p>
+                <ul className="text-xs text-blue-700 space-y-1 ml-4">
+                  <li>• <strong>Assigned:</strong> New training modules ready to start</li>
+                  <li>• <strong>In Progress:</strong> Training modules you've started but not yet completed</li>
+                  <li>• <strong>Completed:</strong> Training finished - waiting for trainer approval</li>
+                  <li>• <strong>Approved:</strong> Training completed and approved by your trainer</li>
+                </ul>
+              </div>
+            )}
+            
+            {activeTab === 'trainersignoffs' && (
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h3 className="font-semibold text-purple-900 mb-2">👨‍🏫 Trainer Sign-offs - Your Supervisory Role</h3>
+                <p className="text-sm text-purple-800 mb-2">
+                  This section shows training modules where you are the trainer responsible for supervising and approving trainee completions:
+                </p>
+                <ul className="text-xs text-purple-700 space-y-1 ml-4">
+                  <li>• <strong>Pending Sign-offs:</strong> Trainees have completed training - awaiting your approval</li>
+                  <li>• <strong>Approved:</strong> Training completions you have already signed off on</li>
+                  <li>• <strong>All Assigned:</strong> Complete overview of all training modules you're supervising</li>
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
 
 
@@ -602,6 +656,23 @@ export default function Supervisor() {
                 </>
               )}
             </CardTitle>
+            <div className="text-sm text-muted-foreground mt-2">
+              {activeTab === 'mytrainings' && (
+                <>
+                  {activeFilter === 'assigned' && 'Click "Open" to start your training. The status will automatically update to "In Progress".'}
+                  {activeFilter === 'inprogress' && 'Continue your training by clicking "Open". When finished, click "Mark Complete" to submit for approval.'}
+                  {activeFilter === 'completed' && 'Your training is complete and waiting for your trainer to approve it. You\'ll be notified once approved.'}
+                  {activeFilter === 'approved' && 'Congratulations! These training modules have been completed and approved by your trainer.'}
+                </>
+              )}
+              {activeTab === 'trainersignoffs' && (
+                <>
+                  {activeFilter === 'pending' && 'Trainees have completed their training and are waiting for your approval. Click "Trainer Sign-Off" to review and approve.'}
+                  {activeFilter === 'approved' && 'These are training completions you have already reviewed and approved.'}
+                  {activeFilter === 'allassigned' && 'Complete overview of all training modules you\'re supervising. Includes all statuses: not started, in progress, completed, and approved.'}
+                </>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {(() => {
