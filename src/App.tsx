@@ -20,6 +20,7 @@ const AdminReports = lazy(() => import("./pages/AdminReports"));
 const AdminEmployeeDetail = lazy(() => import("./pages/AdminEmployeeDetail"));
 const AdminSignOffs = lazy(() => import("./pages/AdminSignOffs"));
 const AdminMyTraining = lazy(() => import("./pages/AdminMyTraining"));
+const AdminAuditLogs = lazy(() => import("./pages/AdminAuditLogs"));
 import Supervisor from "./pages/Supervisor";
 
 const queryClient = new QueryClient();
@@ -85,6 +86,11 @@ function AppWithIdleTimeout() {
           <Route path="/admin/mytraining" element={
             <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
               <AdminMyTraining />
+            </Suspense>
+          } />
+          <Route path="/admin/audit-logs" element={
+            <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+              <AdminAuditLogs />
             </Suspense>
           } />
         </Route>

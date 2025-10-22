@@ -177,6 +177,29 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Audit Logs */}
+          <Card 
+            className="shadow-md rounded-2xl hover:shadow-lg transition-all duration-300 bg-gradient-to-r from-slate-50 to-slate-100 border-0 cursor-pointer hover:scale-105"
+            onClick={() => navigate('/admin/audit-logs')}
+          >
+            <CardContent className="flex items-center justify-between p-6">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-600">Audit Logs</h2>
+                <p className="text-sm text-slate-700 mt-1">Track Activity</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="bg-slate-200 p-3 rounded-full">
+                  <svg className="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <svg className="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>
