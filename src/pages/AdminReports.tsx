@@ -59,6 +59,7 @@ export default function AdminReports() {
   const [isCompletionsExpanded, setIsCompletionsExpanded] = React.useState<boolean>(false);
   const [completionsPage, setCompletionsPage] = React.useState<number>(1);
   const [completionsPerPage] = React.useState<number>(50);
+  const [isInitialLoad, setIsInitialLoad] = React.useState<boolean>(true);
 
   // Helper functions for date handling
   const formatDate = (date: Date | undefined) => {
@@ -211,7 +212,7 @@ export default function AdminReports() {
   });
 
   // Step 5: Add all filtering
-  const { data: employeeLogs, isLoading, error: queryError, refetch } = useQuery({
+  const { data: employeeLogs, isLoading, isFetching, error: queryError, refetch } = useQuery({
     queryKey: ['step5-all-filters', debouncedSearch, fromDate, toDate, selectedLine, selectedCategory, selectedModule],
     queryFn: async () => {
       try {
@@ -396,6 +397,13 @@ export default function AdminReports() {
   React.useEffect(() => {
     setCompletionsPage(1);
   }, [employeeLogs]);
+
+  // Mark initial load as complete after first successful data load
+  React.useEffect(() => {
+    if (employeeLogs && !isLoading && isInitialLoad) {
+      setIsInitialLoad(false);
+    }
+  }, [employeeLogs, isLoading, isInitialLoad]);
 
   // NEW: Monthly trend data for bar chart
   const monthlyTrendData = React.useMemo(() => {
@@ -647,7 +655,8 @@ export default function AdminReports() {
     window.location.href = '/';
   };
 
-  if (isLoading) {
+  // Only show full-page loading screen on initial load, not when filters change
+  if (isLoading && isInitialLoad) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header userType="admin" userName={name} onLogout={handleLogout} />
@@ -679,8 +688,9 @@ export default function AdminReports() {
                 Check the browser console for more details
               </div>
               <div className="flex gap-2 justify-center">
-                <Button onClick={() => window.location.reload()}>Retry</Button>
+                <Button type="button" onClick={() => window.location.reload()}>Retry</Button>
                 <Button 
+                  type="button"
                   onClick={() => {
                     setError(null);
                     window.location.reload();
@@ -707,8 +717,16 @@ export default function AdminReports() {
           
         </div>
 
+        {/* Inline Loading Indicator */}
+        {isFetching && !isLoading && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3 animate-pulse">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+            <span className="text-sm text-blue-700 font-medium">Updating reports with your filters...</span>
+          </div>
+        )}
+
         {/* Reimagined KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6 transition-opacity duration-300 ${isFetching && !isLoading ? 'opacity-60' : 'opacity-100'}`}>
           {/* Training Completion Rate */}
           <Card className="bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-lg transition-all duration-300 border-0 shadow-md relative">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -840,7 +858,7 @@ export default function AdminReports() {
         </div>
 
         {/* Chart Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className={`grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 transition-opacity duration-300 ${isFetching && !isLoading ? 'opacity-60' : 'opacity-100'}`}>
           {/* Completion vs Sign-off Trends */}
           <Card className="shadow-md border-0">
             <CardHeader>
@@ -948,7 +966,7 @@ export default function AdminReports() {
         </div>
 
         {/* Employee Coverage Charts - Smaller rectangles */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 transition-opacity duration-300 ${isFetching && !isLoading ? 'opacity-60' : 'opacity-100'}`}>
           {/* Total Employees */}
           <Card className="shadow-md border-0">
             <CardHeader className="pb-3">
@@ -1032,6 +1050,7 @@ export default function AdminReports() {
               <div className="flex gap-2">
                 {search && (
                   <Button 
+                    type="button"
                     onClick={() => setSearch('')} 
                     variant="outline"
                     size="sm"
@@ -1042,7 +1061,7 @@ export default function AdminReports() {
                 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button className="flex items-center gap-2">
+                    <Button type="button" className="flex items-center gap-2">
                       <Download className="h-4 w-4" />
                       Export
                       <ChevronDown className="h-4 w-4" />
@@ -1064,12 +1083,13 @@ export default function AdminReports() {
                 </DropdownMenu>
                 
                 <Button 
+                  type="button"
                   onClick={() => refetch()} 
-                  disabled={isLoading}
+                  disabled={isFetching}
                   variant="outline"
                   className="flex items-center gap-2"
                 >
-                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
                   Refresh
                 </Button>
                 
@@ -1096,6 +1116,7 @@ export default function AdminReports() {
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <Button 
+                    type="button"
                     variant="ghost" 
                     size="sm"
                     onClick={(e) => {
@@ -1145,7 +1166,18 @@ export default function AdminReports() {
               </CardContent>
             )}
             {isFiltersExpanded && (
-              <CardContent className="space-y-6">
+              <CardContent 
+                className="space-y-6"
+                onClick={(e) => {
+                  // Prevent any parent click handlers from triggering
+                  e.stopPropagation();
+                }}
+                onSubmit={(e: any) => {
+                  // Prevent any form submission
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+              >
               {/* Date Range Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -1153,8 +1185,9 @@ export default function AdminReports() {
                     <Clock className="h-4 w-4 text-blue-600" />
                     Date Range
                   </h4>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                     <Button 
+                      type="button"
                       variant="outline" 
                       size="sm"
                       onClick={(e) => {
@@ -1168,6 +1201,7 @@ export default function AdminReports() {
                       All Time
                     </Button>
                     <Button 
+                      type="button"
                       variant="outline" 
                       size="sm"
                       onClick={(e) => {
@@ -1189,6 +1223,7 @@ export default function AdminReports() {
                       Last 30 Days
                     </Button>
                     <Button 
+                      type="button"
                       variant="outline" 
                       size="sm"
                       onClick={(e) => {
@@ -1210,6 +1245,7 @@ export default function AdminReports() {
                       Last 3 Months
                     </Button>
                     <Button 
+                      type="button"
                       variant="outline" 
                       size="sm"
                       onClick={(e) => {
@@ -1284,6 +1320,7 @@ export default function AdminReports() {
                     
                     {(fromDate || toDate) && (
                       <Button 
+                        type="button"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -1440,8 +1477,46 @@ export default function AdminReports() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {/* Show skeleton loaders while fetching new data */}
+                    {isFetching && !isLoading && (
+                      <>
+                        {Array.from({ length: 5 }).map((_, index) => (
+                          <TableRow key={`skeleton-${index}`} className="animate-pulse">
+                            <TableCell>
+                              <div className="space-y-2">
+                                <div className="h-4 bg-gray-200 rounded w-32"></div>
+                                <div className="h-3 bg-gray-100 rounded w-40"></div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-2">
+                                <div className="h-4 bg-gray-200 rounded w-48"></div>
+                                <div className="h-3 bg-gray-100 rounded w-16"></div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="h-6 bg-gray-200 rounded w-24"></div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="h-6 bg-gray-200 rounded w-20"></div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="h-4 bg-gray-200 rounded w-28"></div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="h-6 bg-gray-200 rounded w-20"></div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </>
+                    )}
+                    
+                    {/* Show actual data with subtle opacity during refetch */}
                     {paginatedCompletions.map((row: any) => (
-                      <TableRow key={row.completion_id}>
+                      <TableRow 
+                        key={row.completion_id}
+                        className={isFetching && !isLoading ? 'opacity-50' : ''}
+                      >
                         <TableCell>
                           <div>
                             <div className="font-medium">{row.employee}</div>
@@ -1482,6 +1557,7 @@ export default function AdminReports() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
+                      type="button"
                       variant="outline"
                       size="sm"
                       onClick={(e) => {
@@ -1494,6 +1570,7 @@ export default function AdminReports() {
                       First
                     </Button>
                     <Button
+                      type="button"
                       variant="outline"
                       size="sm"
                       onClick={(e) => {
@@ -1512,6 +1589,7 @@ export default function AdminReports() {
                         if (pageNum > totalPages) return null;
                         return (
                           <Button
+                            type="button"
                             key={pageNum}
                             variant={pageNum === completionsPage ? "default" : "outline"}
                             size="sm"
@@ -1528,6 +1606,7 @@ export default function AdminReports() {
                       })}
                     </div>
                     <Button
+                      type="button"
                       variant="outline"
                       size="sm"
                       onClick={(e) => {
@@ -1541,6 +1620,7 @@ export default function AdminReports() {
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                     <Button
+                      type="button"
                       variant="outline"
                       size="sm"
                       onClick={(e) => {
