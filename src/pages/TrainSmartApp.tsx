@@ -37,6 +37,21 @@ export function TrainSmartApp() {
       }
       
       setNeedsPasswordReset(false);
+      
+      // Check if user is active
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('is_active')
+        .eq('id', session.user.id)
+        .single();
+
+      if (userError || !userData?.is_active) {
+        console.log('🔍 TrainSmartApp: User account is inactive, logging out');
+        await supabase.auth.signOut();
+        setUser({ type: null, name: '' });
+        return;
+      }
+      
       const role: string | undefined = (session.user.app_metadata as any)?.role || (session.user.user_metadata as any)?.role;
       const email = session.user.email || '';
       // Try to get first_name and last_name from the users table

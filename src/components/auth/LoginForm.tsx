@@ -155,6 +155,20 @@ export function LoginForm({ onLogin }: LoginFormProps) {
           return;
         }
         
+        // Check if user is active
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('is_active')
+          .eq('id', userForNav.id)
+          .single();
+
+        if (userError || !userData?.is_active) {
+          await supabase.auth.signOut();
+          setError('Your account has been deactivated. Please contact your administrator.');
+          setLoading(false);
+          return;
+        }
+        
         // Determine user type based on role
         let userType: 'admin' | 'employee' | 'supervisor' = 'employee';
         if (finalRole === 'admin' || finalRole === 'manager') {

@@ -13,7 +13,25 @@ export function ProtectedRoute({ allowed }: ProtectedRouteProps) {
   const [role, setRole] = React.useState<Role | null>(null);
 
   React.useEffect(() => {
-    const derive = (session: any | null) => {
+    const derive = async (session: any | null) => {
+      if (!session?.user) {
+        setRole(null);
+        return;
+      }
+      
+      // Check if user is active
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('is_active')
+        .eq('id', session.user.id)
+        .single();
+
+      if (userError || !userData?.is_active) {
+        await supabase.auth.signOut();
+        setRole(null);
+        return;
+      }
+      
       const r =
         (session?.user?.app_metadata as any)?.role ||
         (session?.user?.user_metadata as any)?.role;
