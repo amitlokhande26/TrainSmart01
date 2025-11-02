@@ -417,6 +417,29 @@ export default function AdminAssignments() {
     }
   };
 
+  const deleteAssignment = async (assignmentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('assignments')
+        .delete()
+        .eq('id', assignmentId);
+      
+      if (error) throw error;
+      
+      setMessage('Assignment deleted successfully');
+      setIsEditModalOpen(false);
+      setEditingAssignment(null);
+      
+      // Restore body scroll
+      document.body.style.overflow = 'unset';
+      
+      // Refresh the assignments data
+      window.location.reload();
+    } catch (e: any) {
+      setMessage(e?.message || 'Failed to delete assignment');
+    }
+  };
+
   const closeEditModal = () => {
     setIsEditModalOpen(false);
     setEditingAssignment(null);
@@ -914,6 +937,7 @@ export default function AdminAssignments() {
                     assignment={editingAssignment}
                     onUpdate={updateAssignment}
                     onCancel={closeEditModal}
+                    onDelete={deleteAssignment}
                     trainers={allTrainers || []}
                     modules={allModules || []}
                   />
@@ -928,7 +952,7 @@ export default function AdminAssignments() {
 }
 
 // Edit Assignment Form Component
-function EditAssignmentForm({ assignment, onUpdate, onCancel, trainers, modules }: any) {
+function EditAssignmentForm({ assignment, onUpdate, onCancel, onDelete, trainers, modules }: any) {
   const [selectedTrainer, setSelectedTrainer] = React.useState(assignment.trainer_user_id || '');
   const [selectedModule, setSelectedModule] = React.useState(assignment.module_id || '');
   const [newDueDate, setNewDueDate] = React.useState(assignment.due_date ? assignment.due_date.split('T')[0] : '');
@@ -1062,6 +1086,17 @@ function EditAssignmentForm({ assignment, onUpdate, onCancel, trainers, modules 
         </Button>
         <Button variant="outline" onClick={onCancel}>
           Cancel
+        </Button>
+        <Button 
+          variant="destructive" 
+          onClick={() => {
+            if (window.confirm('Are you sure you want to delete this assignment? This action cannot be undone.')) {
+              onDelete?.(assignment.id);
+            }
+          }}
+          disabled={updating}
+        >
+          Delete
         </Button>
       </div>
     </div>

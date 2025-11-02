@@ -55,7 +55,7 @@ Deno.serve(async (req: Request) => {
     const to = body.to;
     const subject = body.subject;
     const variables = body.variables;
-    const fallbackFromAddress = Deno.env.get('FROM_EMAIL_ADDRESS') || 'no-reply@trainsmart.smartgendigital.com';
+    const fallbackFromAddress = Deno.env.get('FROM_EMAIL_ADDRESS') || 'no-reply@smartgendigital.com';
     const fallbackFromName = Deno.env.get('FROM_EMAIL_NAME') || 'TrainSmart';
     const from = body.from || `${fallbackFromName} <${fallbackFromAddress}>`;
 
@@ -85,7 +85,7 @@ Deno.serve(async (req: Request) => {
     // Basic validation: if using a custom From domain, ensure it matches a verified domain (best-effort warning)
     if (from.includes('@')) {
       const fromDomain = from.substring(from.indexOf('@') + 1).replace('>', '').trim();
-      const allowedDomain = (Deno.env.get('ALLOWED_EMAIL_DOMAIN') || 'trainsmart.smartgendigital.com').toLowerCase();
+      const allowedDomain = (Deno.env.get('ALLOWED_EMAIL_DOMAIN') || 'smartgendigital.com').toLowerCase();
       if (!fromDomain.endsWith(allowedDomain)) {
         console.warn(`From address domain (${fromDomain}) does not match allowed domain (${allowedDomain}). Resend may reject this message.`);
       }

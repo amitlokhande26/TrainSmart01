@@ -364,7 +364,7 @@ export default async function handler(req: Request): Promise<Response> {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-              from: `${Deno.env.get('FROM_EMAIL_NAME') || 'TrainSmart'} <${Deno.env.get('FROM_EMAIL_ADDRESS') || 'noreply@trainsmart.smartgendigital.com'}>`,
+              from: `${Deno.env.get('FROM_EMAIL_NAME') || 'TrainSmart'} <${Deno.env.get('FROM_EMAIL_ADDRESS') || 'no-reply@smartgendigital.com'}>`,
               to: [body.email],
             subject: 'Your TrainSmart Manager Account - Temporary Password',
               html: htmlTemplate,

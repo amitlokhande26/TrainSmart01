@@ -199,7 +199,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const fromAddress = `${Deno.env.get('FROM_EMAIL_NAME') || 'TrainSmart'} <${Deno.env.get('FROM_EMAIL_ADDRESS') || 'no-reply@trainsmart.smartgendigital.com'}>`;
+    const fromAddress = `${Deno.env.get('FROM_EMAIL_NAME') || 'TrainSmart'} <${Deno.env.get('FROM_EMAIL_ADDRESS') || 'no-reply@smartgendigital.com'}>`;
 
     const emailData = {
       from: fromAddress,

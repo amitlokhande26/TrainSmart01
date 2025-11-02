@@ -320,7 +320,7 @@ export default async function handler(req) {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              from: `${Deno.env.get('FROM_EMAIL_NAME') || 'TrainSmart'} <${Deno.env.get('FROM_EMAIL_ADDRESS') || 'noreply@trainsmart.smartgendigital.com'}>`,
+              from: `${Deno.env.get('FROM_EMAIL_NAME') || 'TrainSmart'} <${Deno.env.get('FROM_EMAIL_ADDRESS') || 'no-reply@smartgendigital.com'}>`,
               to: [email],
               subject: 'TrainSmart Manager Password Reset - New Login Credentials',
               html: htmlTemplate,

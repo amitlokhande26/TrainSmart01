@@ -89,7 +89,7 @@ export default async function handler(req: Request): Promise<Response> {
     const body = `Please sign off training for ${data.assignment?.user?.first_name} ${data.assignment?.user?.last_name} on ${data.assignment?.module?.title}.`;
 
     const resendKey = Deno.env.get('RESEND_API_KEY');
-    const fromEmail = Deno.env.get('NOTIFY_FROM_EMAIL') || 'no-reply@example.com';
+    const fromEmail = `${Deno.env.get('FROM_EMAIL_NAME') || 'TrainSmart'} <${Deno.env.get('FROM_EMAIL_ADDRESS') || 'no-reply@smartgendigital.com'}>`;
 
     if (resendKey) {
       try {
