@@ -10,11 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import logo from '@/assets/logo.png';
 import { useNavigate } from 'react-router-dom';
 
-interface LoginFormProps {
-  onLogin: (userType: 'admin' | 'employee' | 'supervisor', userName: string) => void;
-}
-
-export function LoginForm({ onLogin }: LoginFormProps) {
+export function LoginForm() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
@@ -49,18 +45,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
     return '/employee';
   };
 
-  // Debug: Monitor onLogin calls
-  const originalOnLogin = onLogin;
-  const wrappedOnLogin = React.useCallback((userType: 'admin' | 'employee' | 'supervisor', displayName: string) => {
-    console.log('🚨 onLogin called with:', { userType, displayName });
-    console.log('🚨 Current showPasswordReset state:', showPasswordReset);
-    console.log('🚨 Stack trace:', new Error().stack);
-    if (showPasswordReset) {
-      console.log('🚨 ERROR: onLogin called while password reset modal should be active! BLOCKING CALL.');
-      return; // Don't call the original onLogin
-    }
-    return originalOnLogin(userType, displayName);
-  }, [originalOnLogin, showPasswordReset]);
+  // Ensure we don't proceed with login navigation while password reset is active
 
   // Prevent navigation when password reset is needed
   React.useEffect(() => {
@@ -177,13 +162,8 @@ export function LoginForm({ onLogin }: LoginFormProps) {
           userType = 'supervisor';
         }
         
-        console.log('About to call onLogin and navigate - this should NOT happen for password reset');
-        if (showPasswordReset) {
-          console.log('BLOCKING onLogin and navigate - password reset modal is active!');
-          setLoading(false);
-          return;
-        }
-        wrappedOnLogin(userType, displayName);
+        // AuthContext will automatically update via onAuthStateChange
+        // Navigate based on role
         navigate(roleToPath(userForNav), { replace: true });
         setLoading(false);
       }
@@ -251,7 +231,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
           userType = 'supervisor';
         }
         
-        wrappedOnLogin(userType, displayName);
+        // AuthContext will automatically update via onAuthStateChange
         navigate(roleToPath(user), { replace: true });
       }
     } catch (err) {
@@ -373,10 +353,6 @@ export function LoginForm({ onLogin }: LoginFormProps) {
       </div>
 
       {/* Password Reset Modal */}
-    {console.log('🔍 Modal render check - showPasswordReset:', showPasswordReset)}
-    {showPasswordReset && (
-      console.log('🔍 RENDERING MODAL - showPasswordReset is true')
-    )}
     {showPasswordReset && createPortal(
         <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" 

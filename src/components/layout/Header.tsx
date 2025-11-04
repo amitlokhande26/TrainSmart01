@@ -7,15 +7,15 @@ import { Link } from 'react-router-dom';
 import { AdminTabStyle } from './AdminTabStyle';
 
 interface HeaderProps {
-  userType: 'admin' | 'employee' | 'supervisor';
+  userType: 'admin' | 'manager' | 'employee' | 'supervisor';
   userName: string;
   onLogout: () => void;
 }
 
 export function Header({ userType, userName, onLogout }: HeaderProps) {
-  // Ensure sidecar profile exists for admins to satisfy FK constraints (e.g., assignments.assigned_by)
+  // Ensure sidecar profile exists for admins/managers to satisfy FK constraints (e.g., assignments.assigned_by)
   React.useEffect(() => {
-    if (userType !== 'admin') return;
+    if (userType !== 'admin' && userType !== 'manager') return;
     (async () => {
       const { data: authData } = await supabase.auth.getUser();
       const u = authData.user;
@@ -67,8 +67,8 @@ export function Header({ userType, userName, onLogout }: HeaderProps) {
                 }}
               />
             </div>
-            {/* Admin Nav */}
-            {userType === 'admin' && (
+            {/* Admin/Manager Nav */}
+            {(userType === 'admin' || userType === 'manager') && (
               <div className="hidden md:flex items-center mr-5">
                 <AdminTabStyle />
               </div>
@@ -81,7 +81,7 @@ export function Header({ userType, userName, onLogout }: HeaderProps) {
               <User className="h-4 w-4" />
               <span className="font-bold">{userName}</span>
               <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
-                {userType === 'admin' ? 'Manager' : userType === 'supervisor' ? 'Supervisor' : 'Employee'}
+                {userType === 'admin' ? 'Admin' : userType === 'manager' ? 'Manager' : userType === 'supervisor' ? 'Supervisor' : 'Employee'}
               </span>
             </div>
             

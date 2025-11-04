@@ -11,6 +11,7 @@ import Admin from "@/pages/Admin";
 import { lazy, Suspense, useEffect } from "react";
 import { useIdleTimeout } from "@/hooks/use-idle-timeout";
 import { IdleWarningModal } from "@/components/auth/IdleWarningModal";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const AdminLibrary = lazy(() => import("./pages/AdminLibrary"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
@@ -47,7 +48,7 @@ function AppWithIdleTimeout() {
         <Route element={<ProtectedRoute allowed={["supervisor"]} />}>
           <Route path="/supervisor" element={<Supervisor />} />
         </Route>
-        <Route element={<ProtectedRoute allowed={["admin"]} />}>
+        <Route element={<ProtectedRoute allowed={["admin", "manager"]} />}>
           <Route path="/admin" element={
             <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
               <AdminDashboard />
@@ -114,7 +115,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AppWithIdleTimeout />
+        <AuthProvider>
+          <AppWithIdleTimeout />
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

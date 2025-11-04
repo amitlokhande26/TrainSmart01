@@ -7,37 +7,23 @@ import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Supervisor() {
-  const [name, setName] = React.useState<string>('Supervisor');
-  const [signOpen, setSignOpen] = React.useState(false);
-  const [pendingCompletion, setPendingCompletion] = React.useState<any | null>(null);
-  const [signedName, setSignedName] = React.useState('');
-  const [activeTab, setActiveTab] = React.useState<'mytrainings' | 'trainersignoffs'>('mytrainings');
-  const [activeFilter, setActiveFilter] = React.useState<'all' | 'assigned' | 'inprogress' | 'completed' | 'pending' | 'approved' | 'allassigned'>('all');
-  const [showHelp, setShowHelp] = React.useState(false);
+  const { user, signOut, loading } = useAuth();
+  const name = user?.name || 'Supervisor';
 
-  React.useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      const u = data.user;
-      if (u) {
-        // Try to get first_name and last_name from the users table
-        const { data: userData } = await supabase
-          .from('users')
-          .select('first_name, last_name')
-          .eq('id', u.id)
-          .single();
-        
-        if (userData && userData.first_name && userData.last_name) {
-          setName(`${userData.first_name} ${userData.last_name}`);
-        } else {
-          // Fallback to user metadata or email
-          const display = (u?.user_metadata as any)?.full_name || u?.email || 'Supervisor';
-          setName(display);
-        }
-      }
-    });
-  }, []);
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const { data: session } = useQuery({
     queryKey: ['session'],
@@ -210,6 +196,18 @@ export default function Supervisor() {
   const [signingOff, setSigningOff] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [pendingAssignment, setPendingAssignment] = React.useState<any | null>(null);
+  
+  // Tab and filter state
+  const [activeTab, setActiveTab] = React.useState<'mytrainings' | 'trainersignoffs'>('mytrainings');
+  const [activeFilter, setActiveFilter] = React.useState<'all' | 'assigned' | 'inprogress' | 'completed' | 'pending' | 'approved' | 'allassigned'>('assigned');
+  
+  // Sign-off dialog state
+  const [signOpen, setSignOpen] = React.useState(false);
+  const [pendingCompletion, setPendingCompletion] = React.useState<any | null>(null);
+  const [signedName, setSignedName] = React.useState('');
+  
+  // Help toggle state
+  const [showHelp, setShowHelp] = React.useState(false);
 
   const markComplete = async (assignment: any) => {
     try {
@@ -370,7 +368,7 @@ export default function Supervisor() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header userType="supervisor" userName={name} onLogout={async () => supabase.auth.signOut()} />
+      <Header userType="supervisor" userName={name} onLogout={signOut} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>

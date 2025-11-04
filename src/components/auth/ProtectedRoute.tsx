@@ -1,57 +1,13 @@
 import React from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-
-type Role = 'admin' | 'employee' | 'supervisor';
+import { useAuth, UserRole } from '@/contexts/AuthContext';
 
 interface ProtectedRouteProps {
-  allowed: Role[];
+  allowed: UserRole[];
 }
 
 export function ProtectedRoute({ allowed }: ProtectedRouteProps) {
-  const [loading, setLoading] = React.useState(true);
-  const [role, setRole] = React.useState<Role | null>(null);
-
-  React.useEffect(() => {
-    const derive = async (session: any | null) => {
-      if (!session?.user) {
-        setRole(null);
-        return;
-      }
-      
-      // Check if user is active
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('is_active')
-        .eq('id', session.user.id)
-        .single();
-
-      if (userError || !userData?.is_active) {
-        await supabase.auth.signOut();
-        setRole(null);
-        return;
-      }
-      
-      const r =
-        (session?.user?.app_metadata as any)?.role ||
-        (session?.user?.user_metadata as any)?.role;
-      const mapped: Role | null =
-        r === 'admin' || r === 'manager' ? 'admin' : r === 'supervisor' ? 'supervisor' : r ? 'employee' : null;
-      setRole(mapped);
-    };
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
-      derive(s);
-      setLoading(false);
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      derive(session);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
@@ -61,13 +17,14 @@ export function ProtectedRoute({ allowed }: ProtectedRouteProps) {
     );
   }
 
-  if (!role) return <Navigate to="/" replace />;
+  if (!user?.type) return <Navigate to="/" replace />;
 
-  if (!allowed.includes(role)) {
-    return <Navigate to={role === 'admin' ? '/admin' : role === 'supervisor' ? '/supervisor' : '/employee'} replace />;
+  if (!allowed.includes(user.type)) {
+    // Redirect based on role - managers also go to /admin
+    const redirectPath = user.type === 'admin' || user.type === 'manager' ? '/admin' : 
+                        user.type === 'supervisor' ? '/supervisor' : '/employee';
+    return <Navigate to={redirectPath} replace />;
   }
 
   return <Outlet />;
 }
-
-
